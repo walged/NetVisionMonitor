@@ -1,0 +1,91 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+build/bin/
+
+# Test binary
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Dependency directories
+vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Claude Code
+.claude/
+
+# Local data and logs
+data/
+logs/
+exports/
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+netvision.db
+
+# FFmpeg binaries (download separately)
+ffmpeg/
+
+# Node modules
+frontend/node_modules/
+
+# Frontend build artifacts (generated)
+frontend/dist/
+
+# Wails generated files
+frontend/wailsjs/
+
+# TFortis specific files
+Tfortis/
+
+# Tools (internal utilities)
+tools/
+
+# Misc temp files
+тз.txt
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+
+# Package files
+pkg/
+
+# Test coverage
+coverage/
+*.cover
+
+# Build cache
+.cache/
+
+# File uploads
+file/
