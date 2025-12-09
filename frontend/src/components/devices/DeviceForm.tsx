@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
 import { GetSwitchesWithPorts } from '../../../wailsjs/go/main/App'
-import { switchManufacturers, getModelsByManufacturer, getPortCountForModel } from '@/data/switchModels'
+import { switchManufacturers, getModelsByManufacturer, getPortCountForModel, getSfpPortCountForModel } from '@/data/switchModels'
 
 interface DeviceFormData {
   id?: number
@@ -33,6 +33,7 @@ interface DeviceFormData {
   snmp_community: string
   snmp_version: string
   port_count: number
+  sfp_port_count: number
   // SNMPv3 settings
   snmpv3_user: string
   snmpv3_security: string
@@ -91,7 +92,8 @@ const defaultFormData: DeviceFormData = {
   model: '',
   snmp_community: 'public',
   snmp_version: 'v2c',
-  port_count: 24,
+  port_count: 8,
+  sfp_port_count: 2,
   snmpv3_user: '',
   snmpv3_security: 'noAuthNoPriv',
   snmpv3_auth_proto: '',
@@ -228,16 +230,20 @@ export function DeviceForm({
       return
     }
 
-    // Auto-set port count based on model
+    // Auto-set port count and SFP port count based on model
     const portCount = formData.manufacturer
       ? getPortCountForModel(formData.manufacturer, modelName)
       : undefined
+    const sfpPortCount = formData.manufacturer
+      ? getSfpPortCountForModel(formData.manufacturer, modelName)
+      : 0
 
-    // Always update model and port_count together to avoid race conditions
+    // Always update model, port_count, and sfp_port_count together
     setFormData((prev) => ({
       ...prev,
       model: modelName,
       port_count: portCount || prev.port_count,
+      sfp_port_count: sfpPortCount,
     }))
   }
 
@@ -473,37 +479,36 @@ export function DeviceForm({
                 <div className="text-sm font-medium text-muted-foreground">
                   Параметры SNMP
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="snmp_version">Версия SNMP</Label>
-                    <Select
-                      value={formData.snmp_version}
-                      onValueChange={(v) => updateField('snmp_version', v)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="v1">SNMPv1</SelectItem>
-                        <SelectItem value="v2c">SNMPv2c</SelectItem>
-                        <SelectItem value="v3">SNMPv3</SelectItem>
-                      </SelectContent>
-                    </Select>
+                {/* Show port configuration info based on selected model */}
+                {formData.model && (
+                  <div className="text-sm bg-muted/50 p-3 rounded-md">
+                    <div className="font-medium mb-1">Конфигурация портов:</div>
+                    <div className="text-muted-foreground">
+                      Всего портов: <span className="text-foreground font-medium">{formData.port_count}</span>
+                      {formData.sfp_port_count > 0 && (
+                        <>
+                          {' '}({formData.port_count - formData.sfp_port_count} copper + {formData.sfp_port_count} SFP)
+                        </>
+                      )}
+                    </div>
                   </div>
+                )}
 
-                  <div className="grid gap-2">
-                    <Label htmlFor="port_count">Кол-во портов</Label>
-                    <Input
-                      id="port_count"
-                      type="number"
-                      min={1}
-                      max={128}
-                      value={formData.port_count}
-                      onChange={(e) =>
-                        updateField('port_count', parseInt(e.target.value) || 24)
-                      }
-                    />
-                  </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="snmp_version">Версия SNMP</Label>
+                  <Select
+                    value={formData.snmp_version}
+                    onValueChange={(v) => updateField('snmp_version', v)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="v1">SNMPv1</SelectItem>
+                      <SelectItem value="v2c">SNMPv2c</SelectItem>
+                      <SelectItem value="v3">SNMPv3</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* SNMPv1/v2c settings */}

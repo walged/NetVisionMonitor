@@ -584,11 +584,18 @@ export function DeviceDetailsPanel({ deviceId, onBack }: DeviceDetailsPanelProps
                             >
                               <div className={`text-xs font-medium ${isSFP ? 'text-amber-600' : ''}`}>{port.port_number}</div>
                               {isSFP ? (
-                                hasUplink ? (
-                                  <Link2 className="w-3 h-3 mx-auto mt-0.5 text-blue-500" />
-                                ) : (
+                                <>
                                   <span className="text-[8px] text-amber-500 block">SFP</span>
-                                )
+                                  {hasUplink && (
+                                    <Link2 className="w-3 h-3 mx-auto text-blue-500" />
+                                  )}
+                                  {!hasUplink && (
+                                    <div className={`w-2 h-2 rounded-full mx-auto mt-0.5 ${
+                                      actualStatus === 'up' ? 'bg-green-500' :
+                                      actualStatus === 'down' ? 'bg-red-500' : 'bg-gray-400'
+                                    }`} />
+                                  )}
+                                </>
                               ) : port.linked_camera_id ? (
                                 <Camera className="w-3 h-3 mx-auto mt-1 text-purple-500" />
                               ) : snmpPoe?.active ? (
@@ -842,6 +849,7 @@ export function DeviceDetailsPanel({ deviceId, onBack }: DeviceDetailsPanelProps
                 <CardTitle>Управление PoE</CardTitle>
                 <CardDescription>
                   Общая мощность: {snmpData.poe.reduce((sum, p) => sum + p.power_w, 0).toFixed(1)} Вт
+                  {' '}• Только copper порты (SFP порты не имеют PoE)
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -855,7 +863,13 @@ export function DeviceDetailsPanel({ deviceId, onBack }: DeviceDetailsPanelProps
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {snmpData.poe.map((poe) => {
+                    {snmpData.poe
+                      .filter(poe => {
+                        // Filter out SFP ports - they don't have PoE
+                        const port = ports.find(p => p.port_number === poe.port_number)
+                        return port?.port_type !== 'sfp'
+                      })
+                      .map((poe) => {
                       const port = ports.find(p => p.port_number === poe.port_number)
                       const isRestarting = restartingPort === poe.port_number
 

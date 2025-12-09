@@ -24,6 +24,7 @@ type DeviceInput struct {
 	SNMPCommunity string `json:"snmp_community,omitempty"`
 	SNMPVersion   string `json:"snmp_version,omitempty"`
 	PortCount     int    `json:"port_count,omitempty"`
+	SFPPortCount  int    `json:"sfp_port_count,omitempty"`
 
 	// SNMPv3-specific
 	SNMPv3User      string `json:"snmpv3_user,omitempty"`
@@ -201,7 +202,14 @@ func (a *App) CreateDevice(input DeviceInput) (*models.Device, error) {
 	case models.DeviceTypeSwitch:
 		portCount := input.PortCount
 		if portCount <= 0 {
-			portCount = 24
+			portCount = 8
+		}
+		sfpPortCount := input.SFPPortCount
+		if sfpPortCount < 0 {
+			sfpPortCount = 0
+		}
+		if sfpPortCount > portCount {
+			sfpPortCount = 0
 		}
 		snmpVersion := input.SNMPVersion
 		if snmpVersion == "" {
@@ -217,6 +225,7 @@ func (a *App) CreateDevice(input DeviceInput) (*models.Device, error) {
 			SNMPCommunity:   input.SNMPCommunity,
 			SNMPVersion:     snmpVersion,
 			PortCount:       portCount,
+			SFPPortCount:    sfpPortCount,
 			SNMPv3User:      input.SNMPv3User,
 			SNMPv3Security:  snmpv3Security,
 			SNMPv3AuthProto: input.SNMPv3AuthProto,
@@ -329,11 +338,16 @@ func (a *App) UpdateDevice(input DeviceInput) error {
 		if snmpv3Security == "" {
 			snmpv3Security = "noAuthNoPriv"
 		}
+		sfpPortCount := input.SFPPortCount
+		if sfpPortCount < 0 || sfpPortCount > input.PortCount {
+			sfpPortCount = 0
+		}
 		sw := &models.Switch{
 			DeviceID:        existing.ID,
 			SNMPCommunity:   input.SNMPCommunity,
 			SNMPVersion:     input.SNMPVersion,
 			PortCount:       input.PortCount,
+			SFPPortCount:    sfpPortCount,
 			SNMPv3User:      input.SNMPv3User,
 			SNMPv3Security:  snmpv3Security,
 			SNMPv3AuthProto: input.SNMPv3AuthProto,

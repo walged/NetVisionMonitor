@@ -76,28 +76,27 @@ export function AboutPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-3xl">
-      {/* Main Info Card */}
-      <Card>
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <div className="p-4 rounded-full bg-primary/10">
-              <Network className="h-12 w-12 text-primary" />
+    <div className="flex justify-center">
+      <Card className="w-full max-w-lg">
+        <CardHeader className="text-center pb-2">
+          <div className="flex justify-center mb-3">
+            <div className="p-3 rounded-full bg-primary/10">
+              <Network className="h-10 w-10 text-primary" />
             </div>
           </div>
-          <CardTitle className="text-2xl">{appInfo?.name || 'NetVisionMonitor'}</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-xl">{appInfo?.name || 'NetVisionMonitor'}</CardTitle>
+          <CardDescription className="text-xs">
             Система мониторинга сетевой инфраструктуры
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex justify-center gap-4">
+        <CardContent className="space-y-4">
+          <div className="flex justify-center gap-3">
             <div className="text-center">
-              <p className="text-3xl font-bold text-primary">{appInfo?.version || '1.0.0'}</p>
-              <p className="text-sm text-muted-foreground">Версия</p>
+              <p className="text-2xl font-bold text-primary">{appInfo?.version || '1.0.0'}</p>
+              <p className="text-xs text-muted-foreground">Версия</p>
             </div>
             {appInfo?.isPortable && (
-              <Badge variant="secondary" className="h-fit mt-2">
+              <Badge variant="secondary" className="h-fit mt-1">
                 <HardDrive className="h-3 w-3 mr-1" />
                 Portable
               </Badge>
@@ -109,30 +108,30 @@ export function AboutPage() {
           {/* Stats */}
           {stats && (
             <>
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div className="p-4 rounded-lg bg-muted/50">
-                  <Monitor className="h-5 w-5 mx-auto mb-2 text-blue-500" />
-                  <p className="text-2xl font-bold">{stats.switch}</p>
-                  <p className="text-xs text-muted-foreground">Коммутаторы</p>
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="p-2 rounded-lg bg-muted/50">
+                  <Monitor className="h-4 w-4 mx-auto mb-1 text-blue-500" />
+                  <p className="text-lg font-bold">{stats.switch}</p>
+                  <p className="text-[10px] text-muted-foreground">Коммутаторы</p>
                 </div>
-                <div className="p-4 rounded-lg bg-muted/50">
-                  <Server className="h-5 w-5 mx-auto mb-2 text-green-500" />
-                  <p className="text-2xl font-bold">{stats.server}</p>
-                  <p className="text-xs text-muted-foreground">Серверы</p>
+                <div className="p-2 rounded-lg bg-muted/50">
+                  <Server className="h-4 w-4 mx-auto mb-1 text-green-500" />
+                  <p className="text-lg font-bold">{stats.server}</p>
+                  <p className="text-[10px] text-muted-foreground">Серверы</p>
                 </div>
-                <div className="p-4 rounded-lg bg-muted/50">
-                  <Camera className="h-5 w-5 mx-auto mb-2 text-purple-500" />
-                  <p className="text-2xl font-bold">{stats.camera}</p>
-                  <p className="text-xs text-muted-foreground">Камеры</p>
+                <div className="p-2 rounded-lg bg-muted/50">
+                  <Camera className="h-4 w-4 mx-auto mb-1 text-purple-500" />
+                  <p className="text-lg font-bold">{stats.camera}</p>
+                  <p className="text-[10px] text-muted-foreground">Камеры</p>
                 </div>
               </div>
-              <div className="flex justify-center gap-8 text-sm">
-                <span className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-green-500" />
+              <div className="flex justify-center gap-6 text-xs">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
                   {stats.online} онлайн
                 </span>
-                <span className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-red-500" />
+                <span className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
                   {stats.offline} оффлайн
                 </span>
               </div>
@@ -141,113 +140,73 @@ export function AboutPage() {
           )}
 
           {/* Features */}
-          <div className="space-y-4">
+          <div className="space-y-2">
             <InfoItem
-              icon={<FileText className="h-5 w-5" />}
+              icon={<FileText className="h-4 w-4" />}
               title="Возможности"
-              description="Мониторинг коммутаторов (SNMP), серверов (Ping/TCP), IP-камер (RTSP/ONVIF)"
+              description="SNMP, Ping/TCP, RTSP/ONVIF мониторинг"
             />
             <InfoItem
-              icon={<Shield className="h-5 w-5" />}
+              icon={<Shield className="h-4 w-4" />}
               title="Безопасность"
-              description="Локальное хранение данных, шифрование паролей AES-256-GCM"
+              description="Локальное хранение, AES-256-GCM шифрование"
             />
             <InfoItem
-              icon={<Code className="h-5 w-5" />}
+              icon={<Code className="h-4 w-4" />}
               title="Технологии"
-              description="Go 1.22+, Wails v2, React 18, TypeScript, SQLite, Tailwind CSS"
+              description="Go, Wails v2, React, TypeScript, SQLite"
             />
           </div>
 
           <Separator />
 
           {/* Data Path */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <Folder className="h-4 w-4" />
-              Расположение данных
+          <div className="space-y-1">
+            <div className="flex items-center gap-1.5 text-xs font-medium">
+              <Folder className="h-3 w-3" />
+              Данные
             </div>
-            <div className="flex items-center gap-2">
-              <code className="flex-1 p-2 rounded bg-muted text-xs font-mono truncate">
+            <div className="flex items-center gap-1">
+              <code className="flex-1 p-1.5 rounded bg-muted text-[10px] font-mono truncate">
                 {dataPath || 'Загрузка...'}
               </code>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleCopyPath}
-                title="Копировать путь"
-              >
-                {copied ? (
-                  <Check className="h-4 w-4 text-green-500" />
-                ) : (
-                  <Copy className="h-4 w-4" />
-                )}
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleCopyPath} title="Копировать">
+                {copied ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
               </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => OpenDataFolder()}
-                title="Открыть папку"
-              >
-                <ExternalLink className="h-4 w-4" />
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => OpenDataFolder()} title="Открыть">
+                <ExternalLink className="h-3 w-3" />
               </Button>
             </div>
           </div>
 
           {/* Log Path */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <ScrollText className="h-4 w-4" />
-              Файл логов
+          <div className="space-y-1">
+            <div className="flex items-center gap-1.5 text-xs font-medium">
+              <ScrollText className="h-3 w-3" />
+              Логи
             </div>
-            <div className="flex items-center gap-2">
-              <code className="flex-1 p-2 rounded bg-muted text-xs font-mono truncate">
+            <div className="flex items-center gap-1">
+              <code className="flex-1 p-1.5 rounded bg-muted text-[10px] font-mono truncate">
                 {logPath || 'Загрузка...'}
               </code>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleCopyLogPath}
-                title="Копировать путь"
-              >
-                {copiedLog ? (
-                  <Check className="h-4 w-4 text-green-500" />
-                ) : (
-                  <Copy className="h-4 w-4" />
-                )}
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleCopyLogPath} title="Копировать">
+                {copiedLog ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
               </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => OpenLogFolder()}
-                title="Открыть папку логов"
-              >
-                <ExternalLink className="h-4 w-4" />
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => OpenLogFolder()} title="Открыть">
+                <ExternalLink className="h-3 w-3" />
               </Button>
             </div>
           </div>
 
           <Separator />
 
-          <div className="text-center text-sm text-muted-foreground space-y-1">
-            <p>Работает полностью автономно без подключения к интернету</p>
-            <p>Поддержка до 300+ устройств в сети</p>
-            <p className="pt-2">© 2024 NetVisionMonitor</p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Keyboard Shortcuts Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Горячие клавиши</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <ShortcutItem keys={['Ctrl', 'R']} description="Обновить данные" />
-            <ShortcutItem keys={['Ctrl', 'M']} description="Запуск мониторинга" />
-            <ShortcutItem keys={['Ctrl', 'N']} description="Добавить устройство" />
-            <ShortcutItem keys={['Ctrl', ',']} description="Настройки" />
+          <div className="text-center text-xs text-muted-foreground">
+            <p>
+              Разработчик: <span className="font-medium">walged</span> with Claude •{' '}
+              <a href="https://arthurdev.ru" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                arthurdev.ru
+              </a>
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -263,34 +222,11 @@ interface InfoItemProps {
 
 function InfoItem({ icon, title, description }: InfoItemProps) {
   return (
-    <div className="flex gap-4">
-      <div className="text-muted-foreground">{icon}</div>
+    <div className="flex gap-3">
+      <div className="text-muted-foreground mt-0.5">{icon}</div>
       <div>
-        <p className="font-medium">{title}</p>
-        <p className="text-sm text-muted-foreground">{description}</p>
-      </div>
-    </div>
-  )
-}
-
-interface ShortcutItemProps {
-  keys: string[]
-  description: string
-}
-
-function ShortcutItem({ keys, description }: ShortcutItemProps) {
-  return (
-    <div className="flex items-center justify-between">
-      <span className="text-muted-foreground">{description}</span>
-      <div className="flex gap-1">
-        {keys.map((key, i) => (
-          <span key={i}>
-            <kbd className="px-2 py-1 text-xs rounded bg-muted border">
-              {key}
-            </kbd>
-            {i < keys.length - 1 && <span className="mx-1">+</span>}
-          </span>
-        ))}
+        <p className="text-sm font-medium">{title}</p>
+        <p className="text-xs text-muted-foreground">{description}</p>
       </div>
     </div>
   )

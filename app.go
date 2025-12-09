@@ -57,7 +57,7 @@ func (a *App) startup(ctx context.Context) {
 	// Clean old logs (keep 30 days)
 	logger.CleanOldLogs(logDir, 30)
 
-	logger.Info("Starting NetVisionMonitor v1.0.0")
+	logger.Info("Starting NetVisionMonitor v1.1.0")
 	logger.Info("Data directory: %s", cfg.DataDir)
 	logger.Info("Portable mode: %v", cfg.IsPortable)
 
@@ -86,6 +86,13 @@ func (a *App) startup(ctx context.Context) {
 	}
 	a.db = db
 	logger.Info("Database initialized")
+
+	// Fix existing port types based on sfp_port_count
+	if err := db.FixExistingPortTypes(); err != nil {
+		logger.Warn("Failed to fix existing port types: %v", err)
+	} else {
+		logger.Info("Port types verified")
+	}
 
 	// Initialize monitoring
 	a.initMonitoring()
@@ -138,7 +145,7 @@ func (a *App) shutdown(ctx context.Context) {
 func (a *App) GetAppInfo() map[string]interface{} {
 	return map[string]interface{}{
 		"name":       "NetVisionMonitor",
-		"version":    "1.0.0",
+		"version":    "1.1.0",
 		"isPortable": a.cfg.IsPortable,
 	}
 }

@@ -259,3 +259,123 @@ ALTER TABLE switch_ports ADD COLUMN linked_switch_id INTEGER REFERENCES devices(
 const migrationSwitchesSFP = `
 ALTER TABLE switches ADD COLUMN sfp_port_count INTEGER DEFAULT 0;
 `
+
+// FixExistingPortTypes updates port_type for existing ports based on switch sfp_port_count
+func (d *Database) FixExistingPortTypes() error {
+	// First, fix sfp_port_count for known models where it's not set
+	d.fixSfpPortCountFromModel()
+
+	// Get all switches with their sfp_port_count
+	rows, err := d.db.Query(`
+		SELECT s.device_id, s.port_count, COALESCE(s.sfp_port_count, 0) as sfp_port_count
+		FROM switches s
+	`)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	type switchInfo struct {
+		deviceID     int64
+		portCount    int
+		sfpPortCount int
+	}
+
+	var switches []switchInfo
+	for rows.Next() {
+		var s switchInfo
+		if err := rows.Scan(&s.deviceID, &s.portCount, &s.sfpPortCount); err != nil {
+			continue
+		}
+		switches = append(switches, s)
+	}
+
+	// Update port types for each switch
+	for _, sw := range switches {
+		if sw.sfpPortCount <= 0 {
+			continue
+		}
+
+		copperPorts := sw.portCount - sw.sfpPortCount
+
+		// Set copper ports
+		_, err := d.db.Exec(`
+			UPDATE switch_ports SET port_type = 'copper'
+			WHERE switch_id = ? AND port_number <= ?`,
+			sw.deviceID, copperPorts,
+		)
+		if err != nil {
+			continue
+		}
+
+		// Set SFP ports
+		_, err = d.db.Exec(`
+			UPDATE switch_ports SET port_type = 'sfp'
+			WHERE switch_id = ? AND port_number > ?`,
+			sw.deviceID, copperPorts,
+		)
+		if err != nil {
+			continue
+		}
+	}
+
+	return nil
+}
+
+// fixSfpPortCountFromModel updates sfp_port_count based on known switch models
+func (d *Database) fixSfpPortCountFromModel() {
+	// Map of model patterns to SFP port count
+	modelSfpPorts := map[string]int{
+		// TFortis models
+		"PSW-1G4F":          1, // 4 PoE + 1 SFP = 5 ports
+		"PSW-1G4F-Box":      1,
+		"PSW-1G4F-Ex":       1,
+		"PSW-1G4F-UPS":      1,
+		"PSW-2G4F":          2, // 4 PoE + 2 SFP = 6 ports
+		"PSW-2G4F-Box":      2,
+		"PSW-2G4F-Ex":       2,
+		"PSW-2G4F-UPS":      2,
+		"PSW-2G+":           2, // 2 PoE + 2 SFP = 4 ports
+		"PSW-2G+-Box":       2,
+		"PSW-2G+-Ex":        2,
+		"PSW-2G+-UPS-Box":   2,
+		"PSW-2G2F+-UPS":     2,
+		"PSW-2G6F+":         2, // 6 PoE + 2 SFP = 8 ports
+		"PSW-2G6F+-Box":     2,
+		"PSW-2G6F+-UPS-Box": 2,
+		"PSW-2G8F+":         2, // 8 PoE + 2 SFP = 10 ports
+		"PSW-2G8F+-Box":     2,
+		"PSW-2G8F+-UPS-Box": 2,
+	}
+
+	// Query all devices with switches that have 0 sfp_port_count
+	rows, err := d.db.Query(`
+		SELECT d.id, d.model
+		FROM devices d
+		JOIN switches s ON s.device_id = d.id
+		WHERE d.type = 'switch' AND (s.sfp_port_count IS NULL OR s.sfp_port_count = 0)
+	`)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var deviceID int64
+		var model string
+		if err := rows.Scan(&deviceID, &model); err != nil {
+			continue
+		}
+
+		// Check if model matches any known pattern
+		sfpCount, ok := modelSfpPorts[model]
+		if !ok {
+			continue
+		}
+
+		// Update sfp_port_count
+		_, _ = d.db.Exec(`
+			UPDATE switches SET sfp_port_count = ? WHERE device_id = ?
+		`, sfpCount, deviceID)
+	}
+}
