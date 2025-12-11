@@ -21,14 +21,14 @@ function getSystemTheme(): 'dark' | 'light' {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>('dark')
-  const [effectiveTheme, setEffectiveTheme] = useState<'dark' | 'light'>('dark')
+  const [theme, setThemeState] = useState<Theme>('light')
+  const [effectiveTheme, setEffectiveTheme] = useState<'dark' | 'light'>('light')
 
   // Load theme from settings
   useEffect(() => {
     GetAppSettings()
       .then((settings) => {
-        const savedTheme = (settings.theme || 'dark') as Theme
+        const savedTheme = (settings.theme || 'light') as Theme
         setThemeState(savedTheme)
       })
       .catch((err) => {

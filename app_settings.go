@@ -49,7 +49,7 @@ type AppSettings struct {
 // DefaultAppSettings returns default settings
 func DefaultAppSettings() AppSettings {
 	return AppSettings{
-		Theme:                  "dark",
+		Theme:                  "light",
 		MonitoringInterval:     30,
 		PingTimeout:            3,
 		SNMPTimeout:            5,

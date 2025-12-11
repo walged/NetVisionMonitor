@@ -59,21 +59,32 @@ export function Header({ title, sidebarCollapsed, onToggleSidebar }: HeaderProps
   const [events, setEvents] = useState<Event[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [isOpen, setIsOpen] = useState(false)
+  const [clearedAt, setClearedAt] = useState<number | null>(null)
 
   const loadEvents = useCallback(async () => {
     try {
       const data = await GetRecentEvents(5) // Show only last 5 notifications
-      setEvents(data || [])
-      // Count events from last hour as "unread"
-      const hourAgo = Date.now() - 3600000
-      const unread = (data || []).filter(e => new Date(e.created_at).getTime() > hourAgo).length
-      setUnreadCount(unread)
+      // If cleared, only show events after clear time
+      if (clearedAt) {
+        const filtered = (data || []).filter(e => new Date(e.created_at).getTime() > clearedAt)
+        setEvents(filtered)
+        const hourAgo = Date.now() - 3600000
+        const unread = filtered.filter(e => new Date(e.created_at).getTime() > hourAgo).length
+        setUnreadCount(unread)
+      } else {
+        setEvents(data || [])
+        // Count events from last hour as "unread"
+        const hourAgo = Date.now() - 3600000
+        const unread = (data || []).filter(e => new Date(e.created_at).getTime() > hourAgo).length
+        setUnreadCount(unread)
+      }
     } catch (err) {
       console.error('Failed to load events:', err)
     }
-  }, [])
+  }, [clearedAt])
 
   const clearNotifications = () => {
+    setClearedAt(Date.now())
     setEvents([])
     setUnreadCount(0)
   }

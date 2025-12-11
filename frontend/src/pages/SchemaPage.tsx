@@ -58,6 +58,7 @@ import {
   GetBackgroundImage,
   GetDevices,
   GetSwitchesWithPorts,
+  GetAllUplinkConnections,
 } from '../../wailsjs/go/main/App'
 import { useDeviceStatusEvents } from '@/hooks/useMonitoring'
 import type { Schema, SchemaItem, Device } from '@/types'
@@ -84,6 +85,13 @@ interface LinkedCamera {
   port_number: number
 }
 
+interface UplinkConnection {
+  from_device_id: number
+  to_device_id: number
+  port_id: number
+  device_type: string
+}
+
 interface ConnectionLine {
   fromId: number
   toId: number
@@ -101,6 +109,7 @@ export function SchemaPage() {
   const [backgroundImage, setBackgroundImage] = useState<string>('')
   const [devices, setDevices] = useState<Device[]>([])
   const [switchesWithPorts, setSwitchesWithPorts] = useState<SwitchWithPorts[]>([])
+  const [uplinkConnections, setUplinkConnections] = useState<UplinkConnection[]>([])
   const [editMode, setEditMode] = useState(false)
   const [selectedItem, setSelectedItem] = useState<SchemaItem | null>(null)
   const [popupItem, setPopupItem] = useState<SchemaItem | null>(null)
@@ -156,12 +165,14 @@ export function SchemaPage() {
   // Load devices for adding to schema
   const loadDevices = useCallback(async () => {
     try {
-      const [devicesData, switchesData] = await Promise.all([
+      const [devicesData, switchesData, uplinksData] = await Promise.all([
         GetDevices(),
         GetSwitchesWithPorts(),
+        GetAllUplinkConnections(),
       ])
       setDevices(devicesData || [])
       setSwitchesWithPorts(switchesData || [])
+      setUplinkConnections(uplinksData || [])
     } catch (err) {
       console.error('Failed to load devices:', err)
     }
@@ -192,8 +203,9 @@ export function SchemaPage() {
   // Calculate connection lines between switches and their cameras/uplinks
   const connections = useMemo((): ConnectionLine[] => {
     const lines: ConnectionLine[] = []
-    const addedUplinks = new Set<string>() // Track added uplinks to avoid duplicates
+    const addedConnections = new Set<string>() // Track added connections to avoid duplicates
 
+    // Camera connections from switch ports
     for (const sw of switchesWithPorts) {
       const switchItem = items.find(i => i.device_id === sw.device_id)
       if (!switchItem || !sw.ports) continue
@@ -203,34 +215,17 @@ export function SchemaPage() {
         if (port.linked_camera_id) {
           const cameraItem = items.find(i => i.device_id === port.linked_camera_id)
           if (cameraItem) {
-            lines.push({
-              fromId: sw.device_id,
-              toId: port.linked_camera_id,
-              fromX: switchItem.x + (switchItem.width || 70) / 2,
-              fromY: switchItem.y + (switchItem.height || 70) / 2,
-              toX: cameraItem.x + (cameraItem.width || 70) / 2,
-              toY: cameraItem.y + (cameraItem.height || 70) / 2,
-              type: 'camera',
-            })
-          }
-        }
-
-        // Uplink connections (SFP ports)
-        if (port.linked_switch_id && port.port_type === 'sfp') {
-          const linkedSwitchItem = items.find(i => i.device_id === port.linked_switch_id)
-          if (linkedSwitchItem) {
-            // Create a unique key for this connection (sorted to avoid duplicates)
-            const key = [sw.device_id, port.linked_switch_id].sort().join('-')
-            if (!addedUplinks.has(key)) {
-              addedUplinks.add(key)
+            const key = `camera-${sw.device_id}-${port.linked_camera_id}`
+            if (!addedConnections.has(key)) {
+              addedConnections.add(key)
               lines.push({
                 fromId: sw.device_id,
-                toId: port.linked_switch_id,
+                toId: port.linked_camera_id,
                 fromX: switchItem.x + (switchItem.width || 70) / 2,
                 fromY: switchItem.y + (switchItem.height || 70) / 2,
-                toX: linkedSwitchItem.x + (linkedSwitchItem.width || 70) / 2,
-                toY: linkedSwitchItem.y + (linkedSwitchItem.height || 70) / 2,
-                type: 'uplink',
+                toX: cameraItem.x + (cameraItem.width || 70) / 2,
+                toY: cameraItem.y + (cameraItem.height || 70) / 2,
+                type: 'camera',
               })
             }
           }
@@ -238,8 +233,31 @@ export function SchemaPage() {
       }
     }
 
+    // Uplink connections from dedicated uplink API (switches and servers)
+    for (const uplink of uplinkConnections) {
+      const fromItem = items.find(i => i.device_id === uplink.from_device_id)
+      const toItem = items.find(i => i.device_id === uplink.to_device_id)
+
+      if (fromItem && toItem) {
+        // Create a unique key for this connection
+        const key = `uplink-${uplink.from_device_id}-${uplink.to_device_id}`
+        if (!addedConnections.has(key)) {
+          addedConnections.add(key)
+          lines.push({
+            fromId: uplink.from_device_id,
+            toId: uplink.to_device_id,
+            fromX: fromItem.x + (fromItem.width || 70) / 2,
+            fromY: fromItem.y + (fromItem.height || 70) / 2,
+            toX: toItem.x + (toItem.width || 70) / 2,
+            toY: toItem.y + (toItem.height || 70) / 2,
+            type: 'uplink',
+          })
+        }
+      }
+    }
+
     return lines
-  }, [items, switchesWithPorts])
+  }, [items, switchesWithPorts, uplinkConnections])
 
   useEffect(() => {
     loadSchemas()

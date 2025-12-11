@@ -72,16 +72,26 @@ const statusColors: Record<string, string> = {
   down: 'bg-red-500',
 }
 
+// SNMP cache - persists between component re-renders
+const snmpCache: Record<number, SwitchSNMPData> = {}
+
 export function NetworkMapPage() {
   const [switches, setSwitches] = useState<SwitchWithPorts[]>([])
   const [devices, setDevices] = useState<Device[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [snmpDataMap, setSNMPDataMap] = useState<Record<number, SwitchSNMPData>>({})
+  const [snmpDataMap, setSNMPDataMap] = useState<Record<number, SwitchSNMPData>>(snmpCache)
   const [togglingPoE, setTogglingPoE] = useState<string | null>(null) // "deviceId-portNumber"
   const [restartingPoE, setRestartingPoE] = useState<string | null>(null)
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (clearCache = false) => {
     setIsLoading(true)
+
+    // Clear cache if requested (e.g., from refresh button)
+    if (clearCache) {
+      Object.keys(snmpCache).forEach(key => delete snmpCache[Number(key)])
+      setSNMPDataMap({})
+    }
+
     try {
       const [switchesData, devicesData] = await Promise.all([
         GetSwitchesWithPorts(),
@@ -90,19 +100,26 @@ export function NetworkMapPage() {
       setSwitches(switchesData || [])
       setDevices(devicesData || [])
 
-      // Load SNMP data for all switches
-      const snmpMap: Record<number, SwitchSNMPData> = {}
-      for (const sw of (switchesData || [])) {
-        try {
-          const snmpData = await GetSwitchSNMPData(sw.device_id)
-          if (snmpData) {
-            snmpMap[sw.device_id] = snmpData
-          }
-        } catch (err) {
-          console.error(`Failed to load SNMP for switch ${sw.device_id}:`, err)
+      // Load SNMP data for switches not in cache
+      const switchesToLoad = (switchesData || []).filter(sw => !snmpCache[sw.device_id])
+
+      if (switchesToLoad.length > 0) {
+        // Process in batches of 5 to avoid overloading
+        const batchSize = 5
+        for (let i = 0; i < switchesToLoad.length; i += batchSize) {
+          const batch = switchesToLoad.slice(i, i + batchSize)
+          const results = await Promise.allSettled(
+            batch.map(sw => GetSwitchSNMPData(sw.device_id))
+          )
+
+          results.forEach((result, idx) => {
+            if (result.status === 'fulfilled' && result.value) {
+              snmpCache[batch[idx].device_id] = result.value
+            }
+          })
         }
+        setSNMPDataMap({ ...snmpCache })
       }
-      setSNMPDataMap(snmpMap)
     } catch (err) {
       console.error('Failed to load network map data:', err)
     } finally {
@@ -116,9 +133,10 @@ export function NetworkMapPage() {
     try {
       await SetPoEEnabled(deviceId, portNumber, enabled)
       await new Promise(resolve => setTimeout(resolve, 1500))
-      // Refresh SNMP data for this switch
+      // Refresh SNMP data for this switch and update cache
       const snmpData = await GetSwitchSNMPData(deviceId)
       if (snmpData) {
+        snmpCache[deviceId] = snmpData
         setSNMPDataMap(prev => ({ ...prev, [deviceId]: snmpData }))
       }
     } catch (err) {
@@ -134,9 +152,10 @@ export function NetworkMapPage() {
     try {
       await RestartPoEPort(deviceId, portNumber)
       await new Promise(resolve => setTimeout(resolve, 4000))
-      // Refresh SNMP data
+      // Refresh SNMP data and update cache
       const snmpData = await GetSwitchSNMPData(deviceId)
       if (snmpData) {
+        snmpCache[deviceId] = snmpData
         setSNMPDataMap(prev => ({ ...prev, [deviceId]: snmpData }))
       }
     } catch (err) {
@@ -205,7 +224,7 @@ export function NetworkMapPage() {
               Визуализация сетевой инфраструктуры
             </p>
           </div>
-          <Button variant="outline" onClick={loadData} disabled={isLoading}>
+          <Button variant="outline" onClick={() => loadData(true)} disabled={isLoading}>
             <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
             Обновить
           </Button>

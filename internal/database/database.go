@@ -90,6 +90,8 @@ func (d *Database) Migrate() error {
 		migrationSwitchesV3,
 		migrationSwitchPortsV2,
 		migrationSwitchesSFP,
+		migrationSwitchesUplink,
+		migrationServersUplink,
 	}
 	for _, migration := range optionalMigrations {
 		d.db.Exec(migration) // Ignore errors for optional migrations
@@ -258,6 +260,16 @@ ALTER TABLE switch_ports ADD COLUMN linked_switch_id INTEGER REFERENCES devices(
 
 const migrationSwitchesSFP = `
 ALTER TABLE switches ADD COLUMN sfp_port_count INTEGER DEFAULT 0;
+`
+
+const migrationSwitchesUplink = `
+ALTER TABLE switches ADD COLUMN uplink_switch_id INTEGER REFERENCES devices(id) ON DELETE SET NULL;
+ALTER TABLE switches ADD COLUMN uplink_port_id INTEGER REFERENCES switch_ports(id) ON DELETE SET NULL;
+`
+
+const migrationServersUplink = `
+ALTER TABLE servers ADD COLUMN uplink_switch_id INTEGER REFERENCES devices(id) ON DELETE SET NULL;
+ALTER TABLE servers ADD COLUMN uplink_port_id INTEGER REFERENCES switch_ports(id) ON DELETE SET NULL;
 `
 
 // FixExistingPortTypes updates port_type for existing ports based on switch sfp_port_count

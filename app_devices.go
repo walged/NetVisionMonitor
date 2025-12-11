@@ -44,6 +44,10 @@ type DeviceInput struct {
 	// Server-specific
 	TCPPorts string `json:"tcp_ports,omitempty"`
 	UseSNMP  bool   `json:"use_snmp,omitempty"`
+
+	// Uplink settings (for switches and servers)
+	UplinkSwitchID *int64 `json:"uplink_switch_id,omitempty"` // Parent switch ID
+	UplinkPortID   *int64 `json:"uplink_port_id,omitempty"`   // SFP port ID on parent switch
 }
 
 // GetDevices returns all devices
@@ -232,12 +236,21 @@ func (a *App) CreateDevice(input DeviceInput) (*models.Device, error) {
 			SNMPv3AuthPass:  input.SNMPv3AuthPass,
 			SNMPv3PrivProto: input.SNMPv3PrivProto,
 			SNMPv3PrivPass:  input.SNMPv3PrivPass,
+			UplinkSwitchID:  input.UplinkSwitchID,
+			UplinkPortID:    input.UplinkPortID,
 		}
 		switchRepo := database.NewSwitchRepository(a.db.DB())
 		if err := switchRepo.Create(sw); err != nil {
 			// Rollback device creation
 			deviceRepo.Delete(device.ID)
 			return nil, err
+		}
+
+		// Link to parent switch port if uplink is set
+		if input.UplinkPortID != nil {
+			if err := switchRepo.LinkSwitch(*input.UplinkPortID, device.ID); err != nil {
+				log.Printf("Warning: failed to link switch to uplink port: %v", err)
+			}
 		}
 
 	case models.DeviceTypeCamera:
@@ -285,14 +298,24 @@ func (a *App) CreateDevice(input DeviceInput) (*models.Device, error) {
 		}
 
 		srv := &models.Server{
-			DeviceID: device.ID,
-			TCPPorts: tcpPorts,
-			UseSNMP:  input.UseSNMP,
+			DeviceID:       device.ID,
+			TCPPorts:       tcpPorts,
+			UseSNMP:        input.UseSNMP,
+			UplinkSwitchID: input.UplinkSwitchID,
+			UplinkPortID:   input.UplinkPortID,
 		}
 		serverRepo := database.NewServerRepository(a.db.DB())
 		if err := serverRepo.Create(srv); err != nil {
 			deviceRepo.Delete(device.ID)
 			return nil, err
+		}
+
+		// Link to parent switch port if uplink is set
+		if input.UplinkPortID != nil {
+			switchRepo := database.NewSwitchRepository(a.db.DB())
+			if err := switchRepo.LinkSwitch(*input.UplinkPortID, device.ID); err != nil {
+				log.Printf("Warning: failed to link server to uplink port: %v", err)
+			}
 		}
 	}
 
@@ -342,6 +365,15 @@ func (a *App) UpdateDevice(input DeviceInput) error {
 		if sfpPortCount < 0 || sfpPortCount > input.PortCount {
 			sfpPortCount = 0
 		}
+
+		// Get old uplink to manage port links
+		switchRepo := database.NewSwitchRepository(a.db.DB())
+		oldSwitch, _ := switchRepo.GetByDeviceID(existing.ID)
+		var oldUplinkPortID *int64
+		if oldSwitch != nil {
+			oldUplinkPortID = oldSwitch.UplinkPortID
+		}
+
 		sw := &models.Switch{
 			DeviceID:        existing.ID,
 			SNMPCommunity:   input.SNMPCommunity,
@@ -354,10 +386,21 @@ func (a *App) UpdateDevice(input DeviceInput) error {
 			SNMPv3AuthPass:  input.SNMPv3AuthPass,
 			SNMPv3PrivProto: input.SNMPv3PrivProto,
 			SNMPv3PrivPass:  input.SNMPv3PrivPass,
+			UplinkSwitchID:  input.UplinkSwitchID,
+			UplinkPortID:    input.UplinkPortID,
 		}
-		switchRepo := database.NewSwitchRepository(a.db.DB())
 		if err := switchRepo.Update(sw); err != nil {
 			return err
+		}
+
+		// Update port links if uplink changed
+		if oldUplinkPortID != nil && (input.UplinkPortID == nil || *oldUplinkPortID != *input.UplinkPortID) {
+			// Unlink from old port
+			switchRepo.UnlinkSwitch(*oldUplinkPortID)
+		}
+		if input.UplinkPortID != nil && (oldUplinkPortID == nil || *oldUplinkPortID != *input.UplinkPortID) {
+			// Link to new port
+			switchRepo.LinkSwitch(*input.UplinkPortID, existing.ID)
 		}
 
 	case models.DeviceTypeCamera:
@@ -388,14 +431,34 @@ func (a *App) UpdateDevice(input DeviceInput) error {
 		}
 
 	case models.DeviceTypeServer:
-		srv := &models.Server{
-			DeviceID: existing.ID,
-			TCPPorts: input.TCPPorts,
-			UseSNMP:  input.UseSNMP,
-		}
+		// Get old uplink to manage port links
 		serverRepo := database.NewServerRepository(a.db.DB())
+		oldServer, _ := serverRepo.GetByDeviceID(existing.ID)
+		var oldUplinkPortID *int64
+		if oldServer != nil {
+			oldUplinkPortID = oldServer.UplinkPortID
+		}
+
+		srv := &models.Server{
+			DeviceID:       existing.ID,
+			TCPPorts:       input.TCPPorts,
+			UseSNMP:        input.UseSNMP,
+			UplinkSwitchID: input.UplinkSwitchID,
+			UplinkPortID:   input.UplinkPortID,
+		}
 		if err := serverRepo.Update(srv); err != nil {
 			return err
+		}
+
+		// Update port links if uplink changed
+		switchRepo := database.NewSwitchRepository(a.db.DB())
+		if oldUplinkPortID != nil && (input.UplinkPortID == nil || *oldUplinkPortID != *input.UplinkPortID) {
+			// Unlink from old port
+			switchRepo.UnlinkSwitch(*oldUplinkPortID)
+		}
+		if input.UplinkPortID != nil && (oldUplinkPortID == nil || *oldUplinkPortID != *input.UplinkPortID) {
+			// Link to new port
+			switchRepo.LinkSwitch(*input.UplinkPortID, existing.ID)
 		}
 	}
 

@@ -201,3 +201,64 @@ func (a *App) GetSwitchesWithPorts() ([]SwitchWithPorts, error) {
 	log.Printf("GetSwitchesWithPorts: returning %d switches", len(result))
 	return result, nil
 }
+
+// UplinkConnection represents an uplink connection between devices
+type UplinkConnection struct {
+	FromDeviceID int64  `json:"from_device_id"`
+	ToDeviceID   int64  `json:"to_device_id"`
+	PortID       int64  `json:"port_id"`
+	DeviceType   string `json:"device_type"` // "switch" or "server"
+}
+
+// GetAllUplinkConnections returns all uplink connections (switches and servers to their parent switches)
+func (a *App) GetAllUplinkConnections() ([]UplinkConnection, error) {
+	if a.db == nil {
+		return []UplinkConnection{}, nil
+	}
+
+	connections := make([]UplinkConnection, 0)
+
+	// Get switch uplinks
+	switchRows, err := a.db.DB().Query(`
+		SELECT s.device_id, s.uplink_switch_id, s.uplink_port_id
+		FROM switches s
+		WHERE s.uplink_switch_id IS NOT NULL AND s.uplink_port_id IS NOT NULL
+	`)
+	if err == nil {
+		defer switchRows.Close()
+		for switchRows.Next() {
+			var deviceID, uplinkSwitchID, uplinkPortID int64
+			if err := switchRows.Scan(&deviceID, &uplinkSwitchID, &uplinkPortID); err == nil {
+				connections = append(connections, UplinkConnection{
+					FromDeviceID: uplinkSwitchID, // Parent switch
+					ToDeviceID:   deviceID,       // Child switch
+					PortID:       uplinkPortID,
+					DeviceType:   "switch",
+				})
+			}
+		}
+	}
+
+	// Get server uplinks
+	serverRows, err := a.db.DB().Query(`
+		SELECT s.device_id, s.uplink_switch_id, s.uplink_port_id
+		FROM servers s
+		WHERE s.uplink_switch_id IS NOT NULL AND s.uplink_port_id IS NOT NULL
+	`)
+	if err == nil {
+		defer serverRows.Close()
+		for serverRows.Next() {
+			var deviceID, uplinkSwitchID, uplinkPortID int64
+			if err := serverRows.Scan(&deviceID, &uplinkSwitchID, &uplinkPortID); err == nil {
+				connections = append(connections, UplinkConnection{
+					FromDeviceID: uplinkSwitchID, // Parent switch
+					ToDeviceID:   deviceID,       // Server
+					PortID:       uplinkPortID,
+					DeviceType:   "server",
+				})
+			}
+		}
+	}
+
+	return connections, nil
+}

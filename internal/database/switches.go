@@ -37,10 +37,12 @@ func (r *SwitchRepository) Create(sw *models.Switch) error {
 
 	_, err = r.db.Exec(`
 		INSERT INTO switches (device_id, snmp_community, snmp_version, port_count, sfp_port_count,
-			snmpv3_user, snmpv3_security, snmpv3_auth_proto, snmpv3_auth_pass, snmpv3_priv_proto, snmpv3_priv_pass)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			snmpv3_user, snmpv3_security, snmpv3_auth_proto, snmpv3_auth_pass, snmpv3_priv_proto, snmpv3_priv_pass,
+			uplink_switch_id, uplink_port_id)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		sw.DeviceID, encryptedCommunity, sw.SNMPVersion, sw.PortCount, sw.SFPPortCount,
 		sw.SNMPv3User, sw.SNMPv3Security, sw.SNMPv3AuthProto, encryptedAuthPass, sw.SNMPv3PrivProto, encryptedPrivPass,
+		sw.UplinkSwitchID, sw.UplinkPortID,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create switch: %w", err)
@@ -71,15 +73,18 @@ func (r *SwitchRepository) GetByDeviceID(deviceID int64) (*models.Switch, error)
 	sw := &models.Switch{}
 	var encryptedCommunity, encryptedAuthPass, encryptedPrivPass string
 	var snmpv3User, snmpv3Security, snmpv3AuthProto, snmpv3PrivProto sql.NullString
+	var uplinkSwitchID, uplinkPortID sql.NullInt64
 
 	err := r.db.QueryRow(`
 		SELECT device_id, snmp_community, snmp_version, port_count, COALESCE(sfp_port_count, 0),
 			COALESCE(snmpv3_user, ''), COALESCE(snmpv3_security, 'noAuthNoPriv'),
 			COALESCE(snmpv3_auth_proto, ''), COALESCE(snmpv3_auth_pass, ''),
-			COALESCE(snmpv3_priv_proto, ''), COALESCE(snmpv3_priv_pass, '')
+			COALESCE(snmpv3_priv_proto, ''), COALESCE(snmpv3_priv_pass, ''),
+			uplink_switch_id, uplink_port_id
 		FROM switches WHERE device_id = ?`, deviceID,
 	).Scan(&sw.DeviceID, &encryptedCommunity, &sw.SNMPVersion, &sw.PortCount, &sw.SFPPortCount,
-		&snmpv3User, &snmpv3Security, &snmpv3AuthProto, &encryptedAuthPass, &snmpv3PrivProto, &encryptedPrivPass)
+		&snmpv3User, &snmpv3Security, &snmpv3AuthProto, &encryptedAuthPass, &snmpv3PrivProto, &encryptedPrivPass,
+		&uplinkSwitchID, &uplinkPortID)
 
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -115,6 +120,12 @@ func (r *SwitchRepository) GetByDeviceID(deviceID int64) (*models.Switch, error)
 	if snmpv3PrivProto.Valid {
 		sw.SNMPv3PrivProto = snmpv3PrivProto.String
 	}
+	if uplinkSwitchID.Valid {
+		sw.UplinkSwitchID = &uplinkSwitchID.Int64
+	}
+	if uplinkPortID.Valid {
+		sw.UplinkPortID = &uplinkPortID.Int64
+	}
 
 	return sw, nil
 }
@@ -146,11 +157,13 @@ func (r *SwitchRepository) Update(sw *models.Switch) error {
 	_, err = r.db.Exec(`
 		UPDATE switches SET snmp_community = ?, snmp_version = ?, port_count = ?, sfp_port_count = ?,
 			snmpv3_user = ?, snmpv3_security = ?, snmpv3_auth_proto = ?, snmpv3_auth_pass = ?,
-			snmpv3_priv_proto = ?, snmpv3_priv_pass = ?
+			snmpv3_priv_proto = ?, snmpv3_priv_pass = ?,
+			uplink_switch_id = ?, uplink_port_id = ?
 		WHERE device_id = ?`,
 		encryptedCommunity, sw.SNMPVersion, sw.PortCount, sw.SFPPortCount,
 		sw.SNMPv3User, sw.SNMPv3Security, sw.SNMPv3AuthProto, encryptedAuthPass,
-		sw.SNMPv3PrivProto, encryptedPrivPass, sw.DeviceID,
+		sw.SNMPv3PrivProto, encryptedPrivPass,
+		sw.UplinkSwitchID, sw.UplinkPortID, sw.DeviceID,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to update switch: %w", err)

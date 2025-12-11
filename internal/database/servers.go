@@ -20,9 +20,9 @@ func NewServerRepository(db *sql.DB) *ServerRepository {
 // Create inserts server-specific data
 func (r *ServerRepository) Create(srv *models.Server) error {
 	_, err := r.db.Exec(`
-		INSERT INTO servers (device_id, tcp_ports, use_snmp)
-		VALUES (?, ?, ?)`,
-		srv.DeviceID, srv.TCPPorts, srv.UseSNMP,
+		INSERT INTO servers (device_id, tcp_ports, use_snmp, uplink_switch_id, uplink_port_id)
+		VALUES (?, ?, ?, ?, ?)`,
+		srv.DeviceID, srv.TCPPorts, srv.UseSNMP, srv.UplinkSwitchID, srv.UplinkPortID,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create server: %w", err)
@@ -33,11 +33,12 @@ func (r *ServerRepository) Create(srv *models.Server) error {
 // GetByDeviceID retrieves server data by device ID
 func (r *ServerRepository) GetByDeviceID(deviceID int64) (*models.Server, error) {
 	srv := &models.Server{}
+	var uplinkSwitchID, uplinkPortID sql.NullInt64
 
 	err := r.db.QueryRow(`
-		SELECT device_id, tcp_ports, use_snmp
+		SELECT device_id, tcp_ports, use_snmp, uplink_switch_id, uplink_port_id
 		FROM servers WHERE device_id = ?`, deviceID,
-	).Scan(&srv.DeviceID, &srv.TCPPorts, &srv.UseSNMP)
+	).Scan(&srv.DeviceID, &srv.TCPPorts, &srv.UseSNMP, &uplinkSwitchID, &uplinkPortID)
 
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -46,15 +47,22 @@ func (r *ServerRepository) GetByDeviceID(deviceID int64) (*models.Server, error)
 		return nil, fmt.Errorf("failed to get server: %w", err)
 	}
 
+	if uplinkSwitchID.Valid {
+		srv.UplinkSwitchID = &uplinkSwitchID.Int64
+	}
+	if uplinkPortID.Valid {
+		srv.UplinkPortID = &uplinkPortID.Int64
+	}
+
 	return srv, nil
 }
 
 // Update updates server-specific data
 func (r *ServerRepository) Update(srv *models.Server) error {
 	_, err := r.db.Exec(`
-		UPDATE servers SET tcp_ports = ?, use_snmp = ?
+		UPDATE servers SET tcp_ports = ?, use_snmp = ?, uplink_switch_id = ?, uplink_port_id = ?
 		WHERE device_id = ?`,
-		srv.TCPPorts, srv.UseSNMP, srv.DeviceID,
+		srv.TCPPorts, srv.UseSNMP, srv.UplinkSwitchID, srv.UplinkPortID, srv.DeviceID,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to update server: %w", err)

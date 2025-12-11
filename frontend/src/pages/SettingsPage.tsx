@@ -50,8 +50,8 @@ import {
 import {
   GetAppSettings,
   SaveAppSettings,
-  ExportData,
-  ImportData,
+  ExportConfiguration,
+  ImportConfiguration,
   GetDataPath,
   OpenDataFolder,
   ClearOldData,
@@ -82,7 +82,7 @@ export function SettingsPage() {
   const { theme, setTheme } = useTheme()
   const [settings, setSettings] = useState<AppSettings>(
     main.AppSettings.createFrom({
-      theme: 'dark',
+      theme: 'light',
       monitoring_interval: 30,
       ping_timeout: 3,
       snmp_timeout: 5,
@@ -196,6 +196,11 @@ export function SettingsPage() {
     loadMinimizeToTray()
   }, [loadSettings, loadCredentials, loadDataPath, loadAutostart, loadMinimizeToTray])
 
+  // Sync theme from hook to settings state
+  useEffect(() => {
+    setSettings((prev) => ({ ...prev, theme }))
+  }, [theme])
+
   const hasChanges = JSON.stringify(settings) !== JSON.stringify(originalSettings)
 
   const handleSave = async () => {
@@ -217,7 +222,7 @@ export function SettingsPage() {
 
   const handleExport = async () => {
     try {
-      const path = await ExportData()
+      const path = await ExportConfiguration()
       if (path) {
         setSaveSuccess(true)
         setTimeout(() => setSaveSuccess(false), 3000)
@@ -229,7 +234,7 @@ export function SettingsPage() {
 
   const handleImport = async () => {
     try {
-      const success = await ImportData()
+      const success = await ImportConfiguration()
       if (success) {
         loadSettings()
         loadCredentials()
@@ -708,18 +713,18 @@ export function SettingsPage() {
           <div className="flex gap-4">
             <Button variant="outline" onClick={handleExport}>
               <Download className="h-4 w-4 mr-2" />
-              Экспорт данных
+              Экспорт конфигурации
             </Button>
             <Button variant="outline" onClick={handleImport}>
               <Upload className="h-4 w-4 mr-2" />
-              Импорт данных
+              Импорт конфигурации
             </Button>
             <Button
               variant="outline"
               onClick={() => setClearDataDialogOpen(true)}
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              Очистить старые
+              Очистить события
             </Button>
           </div>
         </CardContent>

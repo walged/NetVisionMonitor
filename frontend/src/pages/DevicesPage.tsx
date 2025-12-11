@@ -72,7 +72,7 @@ export function DevicesPage({ filterType }: DevicesPageProps) {
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(50)
+  const [pageSize, setPageSize] = useState(20)
   const [totalItems, setTotalItems] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
 
@@ -190,6 +190,7 @@ export function DevicesPage({ filterType }: DevicesPageProps) {
           formData.snmp_community = fullDevice.switch.snmp_community
           formData.snmp_version = fullDevice.switch.snmp_version
           formData.port_count = fullDevice.switch.port_count
+          formData.sfp_port_count = fullDevice.switch.sfp_port_count || 0
           // SNMPv3 fields
           formData.snmpv3_user = fullDevice.switch.snmpv3_user || ''
           formData.snmpv3_security = fullDevice.switch.snmpv3_security || 'noAuthNoPriv'
@@ -236,6 +237,7 @@ export function DevicesPage({ filterType }: DevicesPageProps) {
     snmp_community: string
     snmp_version: string
     port_count: number
+    sfp_port_count: number
     // SNMPv3 settings
     snmpv3_user: string
     snmpv3_security: string
@@ -392,16 +394,14 @@ export function DevicesPage({ filterType }: DevicesPageProps) {
             isLoading={isLoading}
           />
           {/* Pagination */}
-          {totalPages > 1 && (
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              pageSize={pageSize}
-              totalItems={totalItems}
-              onPageChange={handlePageChange}
-              onPageSizeChange={handlePageSizeChange}
-            />
-          )}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            totalItems={totalItems}
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
+          />
         </CardContent>
       </Card>
 

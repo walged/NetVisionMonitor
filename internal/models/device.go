@@ -45,6 +45,9 @@ type Switch struct {
 	SNMPv3AuthPass   string `json:"snmpv3_auth_pass,omitempty"`
 	SNMPv3PrivProto  string `json:"snmpv3_priv_proto,omitempty"` // DES, AES
 	SNMPv3PrivPass   string `json:"snmpv3_priv_pass,omitempty"`
+	// Uplink settings
+	UplinkSwitchID *int64 `json:"uplink_switch_id,omitempty"` // Parent switch ID
+	UplinkPortID   *int64 `json:"uplink_port_id,omitempty"`   // SFP port ID on parent switch
 }
 
 type SwitchPort struct {
@@ -71,6 +74,9 @@ type Server struct {
 	DeviceID int64  `json:"device_id"`
 	TCPPorts string `json:"tcp_ports"` // JSON array
 	UseSNMP  bool   `json:"use_snmp"`
+	// Uplink settings
+	UplinkSwitchID *int64 `json:"uplink_switch_id,omitempty"` // Parent switch ID
+	UplinkPortID   *int64 `json:"uplink_port_id,omitempty"`   // SFP port ID on parent switch
 }
 
 // DeviceWithDetails combines device with its type-specific details

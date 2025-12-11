@@ -27,13 +27,17 @@ func InitTray(app *App) {
 	trayApp = app
 	trayRunning = true
 
+	// Left click shows context menu
 	systray.SetOnClick(func(menu systray.IMenu) {
-		// Double click to show window
-		if trayApp != nil {
-			trayApp.ShowFromTray()
-		}
+		menu.ShowMenu()
 	})
 
+	// Right click also shows context menu
+	systray.SetOnRClick(func(menu systray.IMenu) {
+		menu.ShowMenu()
+	})
+
+	// Double click to show window
 	systray.SetOnDClick(func(menu systray.IMenu) {
 		if trayApp != nil {
 			trayApp.ShowFromTray()

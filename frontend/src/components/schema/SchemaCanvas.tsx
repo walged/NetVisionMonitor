@@ -51,11 +51,33 @@ export function SchemaCanvas({
   const [isPanning, setIsPanning] = useState(false)
   const [panStart, setPanStart] = useState({ x: 0, y: 0 })
 
-  // Handle wheel zoom
+  // Handle wheel zoom - zoom towards mouse cursor position
   const handleWheel = useCallback((e: WheelEvent) => {
     e.preventDefault()
+
+    const container = containerRef.current
+    if (!container) return
+
+    const rect = container.getBoundingClientRect()
+    // Mouse position relative to container
+    const mouseX = e.clientX - rect.left
+    const mouseY = e.clientY - rect.top
+
+    // Calculate zoom
     const delta = e.deltaY > 0 ? 0.9 : 1.1
-    setScale((s) => Math.min(Math.max(s * delta, 0.25), 4))
+
+    setScale((prevScale) => {
+      const newScale = Math.min(Math.max(prevScale * delta, 0.25), 4)
+      const scaleFactor = newScale / prevScale
+
+      // Adjust offset so zoom centers on mouse position
+      setOffset((prevOffset) => ({
+        x: mouseX - (mouseX - prevOffset.x) * scaleFactor,
+        y: mouseY - (mouseY - prevOffset.y) * scaleFactor,
+      }))
+
+      return newScale
+    })
   }, [])
 
   useEffect(() => {

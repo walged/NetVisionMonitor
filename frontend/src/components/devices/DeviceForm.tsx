@@ -50,6 +50,9 @@ interface DeviceFormData {
   // Server
   tcp_ports: string
   use_snmp: boolean
+  // Uplink (for switches and servers)
+  uplink_switch_id?: number
+  uplink_port_id?: number
 }
 
 interface Credential {
@@ -64,7 +67,9 @@ interface SwitchPort {
   port_number: number
   name: string
   status: string
+  port_type: string
   linked_camera_id?: number
+  linked_switch_id?: number
 }
 
 interface SwitchWithPorts {
@@ -120,6 +125,7 @@ export function DeviceForm({
   const [error, setError] = useState<string | null>(null)
   const [switches, setSwitches] = useState<SwitchWithPorts[]>([])
   const [selectedSwitchId, setSelectedSwitchId] = useState<number | null>(null)
+  const [selectedUplinkSwitchId, setSelectedUplinkSwitchId] = useState<number | null>(null)
 
   const loadSwitches = async () => {
     try {
@@ -132,22 +138,22 @@ export function DeviceForm({
     }
   }
 
-  // Load switches when form opens and type is camera
+  // Load switches when form opens and type is camera, switch, or server
   useEffect(() => {
-    if (open && formData.type === 'camera') {
+    if (open && (formData.type === 'camera' || formData.type === 'switch' || formData.type === 'server')) {
       loadSwitches()
     }
   }, [open, formData.type])
 
-  // Initialize form data and find switch for existing camera
+  // Initialize form data and find switch for existing camera/uplink
   useEffect(() => {
     const initForm = async () => {
       if (initialData) {
         setFormData({ ...defaultFormData, ...initialData })
+        const switchesData = await loadSwitches()
 
         // If editing a camera with a switch_port_id, find which switch owns that port
         if (initialData.type === 'camera' && initialData.switch_port_id) {
-          const switchesData = await loadSwitches()
           for (const sw of switchesData) {
             if (sw.ports) {
               const port = sw.ports.find(p => p.id === initialData.switch_port_id)
@@ -158,9 +164,23 @@ export function DeviceForm({
             }
           }
         }
+
+        // If editing a switch/server with uplink_port_id, find which switch owns that port
+        if ((initialData.type === 'switch' || initialData.type === 'server') && initialData.uplink_port_id) {
+          for (const sw of switchesData) {
+            if (sw.ports) {
+              const port = sw.ports.find(p => p.id === initialData.uplink_port_id)
+              if (port) {
+                setSelectedUplinkSwitchId(sw.device_id)
+                break
+              }
+            }
+          }
+        }
       } else {
         setFormData(defaultFormData)
         setSelectedSwitchId(null)
+        setSelectedUplinkSwitchId(null)
       }
       setError(null)
     }
@@ -169,6 +189,7 @@ export function DeviceForm({
       initForm()
     } else {
       setSelectedSwitchId(null)
+      setSelectedUplinkSwitchId(null)
     }
   }, [initialData, open])
 
@@ -255,8 +276,37 @@ export function DeviceForm({
     if (!selectedSwitchId) return []
     const sw = switches.find(s => s.device_id === selectedSwitchId)
     if (!sw || !sw.ports) return []
-    // Filter only ports without linked camera (or the current camera when editing)
-    return sw.ports.filter(p => !p.linked_camera_id || p.linked_camera_id === initialData?.id)
+    // Filter only copper ports without linked camera (or the current camera when editing)
+    return sw.ports.filter(p => p.port_type === 'copper' && (!p.linked_camera_id || p.linked_camera_id === initialData?.id))
+  }
+
+  // Get available SFP ports for uplink (exclude current device if editing)
+  const getAvailableSfpPorts = () => {
+    if (!selectedUplinkSwitchId) return []
+    const sw = switches.find(s => s.device_id === selectedUplinkSwitchId)
+    if (!sw || !sw.ports) return []
+    // Filter only SFP ports without linked switch (or the current device when editing)
+    return sw.ports.filter(p =>
+      p.port_type === 'sfp' &&
+      (!p.linked_switch_id || p.linked_switch_id === initialData?.id)
+    )
+  }
+
+  // Get switches available for uplink (exclude current switch if editing)
+  const getAvailableUplinkSwitches = () => {
+    return switches.filter(sw => sw.device_id !== initialData?.id)
+  }
+
+  const handleUplinkSwitchChange = (switchId: string) => {
+    const id = switchId === 'none' ? null : parseInt(switchId)
+    setSelectedUplinkSwitchId(id)
+    updateField('uplink_switch_id', id || undefined)
+    updateField('uplink_port_id', undefined)
+  }
+
+  const handleUplinkPortChange = (portId: string) => {
+    const portIdNum = portId === 'none' ? undefined : parseInt(portId)
+    updateField('uplink_port_id', portIdNum)
   }
 
   const isEditing = !!initialData?.id
@@ -627,6 +677,63 @@ export function DeviceForm({
                     )}
                   </>
                 )}
+
+                {/* Uplink settings for switches */}
+                {getAvailableUplinkSwitches().length > 0 && (
+                  <>
+                    <Separator />
+                    <div className="text-sm font-medium text-muted-foreground">
+                      Оптический Uplink (SFP)
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="uplink_switch">Родительский коммутатор</Label>
+                        <Select
+                          value={selectedUplinkSwitchId?.toString() || 'none'}
+                          onValueChange={handleUplinkSwitchChange}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Выберите коммутатор..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Не выбран</SelectItem>
+                            {getAvailableUplinkSwitches().map((sw) => (
+                              <SelectItem key={sw.device_id} value={sw.device_id.toString()}>
+                                {sw.device_name} ({sw.ip_address})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="grid gap-2">
+                        <Label htmlFor="uplink_port">SFP порт</Label>
+                        <Select
+                          value={formData.uplink_port_id?.toString() || 'none'}
+                          onValueChange={handleUplinkPortChange}
+                          disabled={!selectedUplinkSwitchId}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Выберите порт..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Не выбран</SelectItem>
+                            {getAvailableSfpPorts().map((port) => (
+                              <SelectItem key={port.id} value={port.id.toString()}>
+                                SFP {port.port_number} - {port.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    {selectedUplinkSwitchId && getAvailableSfpPorts().length === 0 && (
+                      <div className="text-sm text-yellow-600 bg-yellow-500/10 p-2 rounded">
+                        Нет свободных SFP портов на выбранном коммутаторе
+                      </div>
+                    )}
+                  </>
+                )}
               </>
             )}
 
@@ -695,6 +802,63 @@ export function DeviceForm({
                     placeholder='[22, 80, 443]'
                   />
                 </div>
+
+                {/* Uplink settings for servers */}
+                {switches.length > 0 && (
+                  <>
+                    <Separator />
+                    <div className="text-sm font-medium text-muted-foreground">
+                      Оптический Uplink (SFP)
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="uplink_switch">Коммутатор</Label>
+                        <Select
+                          value={selectedUplinkSwitchId?.toString() || 'none'}
+                          onValueChange={handleUplinkSwitchChange}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Выберите коммутатор..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Не выбран</SelectItem>
+                            {switches.map((sw) => (
+                              <SelectItem key={sw.device_id} value={sw.device_id.toString()}>
+                                {sw.device_name} ({sw.ip_address})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="grid gap-2">
+                        <Label htmlFor="uplink_port">SFP порт</Label>
+                        <Select
+                          value={formData.uplink_port_id?.toString() || 'none'}
+                          onValueChange={handleUplinkPortChange}
+                          disabled={!selectedUplinkSwitchId}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Выберите порт..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Не выбран</SelectItem>
+                            {getAvailableSfpPorts().map((port) => (
+                              <SelectItem key={port.id} value={port.id.toString()}>
+                                SFP {port.port_number} - {port.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    {selectedUplinkSwitchId && getAvailableSfpPorts().length === 0 && (
+                      <div className="text-sm text-yellow-600 bg-yellow-500/10 p-2 rounded">
+                        Нет свободных SFP портов на выбранном коммутаторе
+                      </div>
+                    )}
+                  </>
+                )}
               </>
             )}
 
