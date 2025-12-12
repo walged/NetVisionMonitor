@@ -164,11 +164,11 @@ export function DevicesPage({ filterType }: DevicesPageProps) {
       })
       setCredentials(credsData || [])
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('errors.loadingData'))
+      setError(err instanceof Error ? err.message : 'Error loading data')
     } finally {
       setIsLoading(false)
     }
-  }, [filterType, currentPage, pageSize, debouncedSearch, t])
+  }, [filterType, currentPage, pageSize, debouncedSearch])
 
   useEffect(() => {
     loadData()
@@ -206,6 +206,7 @@ export function DevicesPage({ filterType }: DevicesPageProps) {
         // Add type-specific fields
         if (fullDevice.switch) {
           formData.snmp_community = fullDevice.switch.snmp_community
+          formData.snmp_write_community = fullDevice.switch.snmp_write_community || ''
           formData.snmp_version = fullDevice.switch.snmp_version
           formData.port_count = fullDevice.switch.port_count
           formData.sfp_port_count = fullDevice.switch.sfp_port_count || 0
@@ -253,6 +254,7 @@ export function DevicesPage({ filterType }: DevicesPageProps) {
     model: string
     credential_id?: number
     snmp_community: string
+    snmp_write_community: string
     snmp_version: string
     port_count: number
     sfp_port_count: number

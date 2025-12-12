@@ -38,7 +38,6 @@ import {
   RefreshCw,
   Zap,
   ZapOff,
-  Settings,
   Power,
   ArrowDownToLine,
   ArrowUpFromLine,
@@ -46,6 +45,8 @@ import {
   CheckCircle2,
   Loader2,
   Link2,
+  Play,
+  Square,
 } from 'lucide-react'
 import {
   GetDevice,
@@ -56,6 +57,11 @@ import {
   GetSwitchSNMPData,
   RestartPoEPort,
   SetPoEEnabled,
+  SetPortEnabled,
+  RestartPort,
+  RefreshCameraStreams,
+  GetCameraStreamURL,
+  FetchCameraSnapshotBase64,
 } from '../../../wailsjs/go/main/App'
 
 interface DeviceStats {
@@ -142,7 +148,7 @@ export function DeviceDetailsPanel({ deviceId, onBack }: DeviceDetailsPanelProps
   const [isLoading, setIsLoading] = useState(true)
   const [isSNMPLoading, setIsSNMPLoading] = useState(false)
   const [restartingPort, setRestartingPort] = useState<number | null>(null)
-  const [activeTab, setActiveTab] = useState<'overview' | 'ports' | 'management' | 'events' | 'preview'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'ports' | 'events' | 'preview'>('overview')
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [previewLoading, setPreviewLoading] = useState(false)
   const [previewError, setPreviewError] = useState<string | null>(null)
@@ -193,7 +199,7 @@ export function DeviceDetailsPanel({ deviceId, onBack }: DeviceDetailsPanelProps
   }, [loadData])
 
   useEffect(() => {
-    if (device?.type === 'switch' && (activeTab === 'ports' || activeTab === 'management')) {
+    if (device?.type === 'switch' && activeTab === 'ports') {
       loadSNMPData()
     }
   }, [device, activeTab, loadSNMPData])
@@ -212,6 +218,7 @@ export function DeviceDetailsPanel({ deviceId, onBack }: DeviceDetailsPanelProps
   }
 
   const [togglingPoE, setTogglingPoE] = useState<number | null>(null)
+  const [togglingPort, setTogglingPort] = useState<number | null>(null)
 
   const handleTogglePoE = async (portNumber: number, enabled: boolean) => {
     setTogglingPoE(portNumber)
@@ -227,6 +234,36 @@ export function DeviceDetailsPanel({ deviceId, onBack }: DeviceDetailsPanelProps
       console.error('Failed to toggle PoE:', err)
     } finally {
       setTogglingPoE(null)
+    }
+  }
+
+  const handleTogglePort = async (portNumber: number, enabled: boolean) => {
+    setTogglingPort(portNumber)
+    try {
+      console.log(`Setting port ${portNumber} to ${enabled}`)
+      await SetPortEnabled(deviceId, portNumber, enabled)
+      // Wait for the switch to process the command
+      await new Promise(resolve => setTimeout(resolve, 1500))
+      // Force refresh SNMP data to get new state
+      const data = await GetSwitchSNMPData(deviceId)
+      setSNMPData(data)
+    } catch (err) {
+      console.error('Failed to toggle port:', err)
+    } finally {
+      setTogglingPort(null)
+    }
+  }
+
+  const handleRestartPort = async (portNumber: number) => {
+    setTogglingPort(portNumber)
+    try {
+      await RestartPort(deviceId, portNumber)
+      // Reload SNMP data after restart
+      setTimeout(() => loadSNMPData(), 4000)
+    } catch (err) {
+      console.error('Failed to restart port:', err)
+    } finally {
+      setTogglingPort(null)
     }
   }
 
@@ -376,22 +413,13 @@ export function DeviceDetailsPanel({ deviceId, onBack }: DeviceDetailsPanelProps
           Обзор
         </Button>
         {device.type === 'switch' && (
-          <>
-            <Button
-              variant={activeTab === 'ports' ? 'default' : 'outline'}
-              onClick={() => setActiveTab('ports')}
-            >
-              <Network className="h-4 w-4 mr-2" />
-              Порты ({ports.length})
-            </Button>
-            <Button
-              variant={activeTab === 'management' ? 'default' : 'outline'}
-              onClick={() => setActiveTab('management')}
-            >
-              <Settings className="h-4 w-4 mr-2" />
-              Управление
-            </Button>
-          </>
+          <Button
+            variant={activeTab === 'ports' ? 'default' : 'outline'}
+            onClick={() => setActiveTab('ports')}
+          >
+            <Network className="h-4 w-4 mr-2" />
+            Порты ({ports.length})
+          </Button>
         )}
         {device.type === 'camera' && (
           <Button
@@ -558,6 +586,52 @@ export function DeviceDetailsPanel({ deviceId, onBack }: DeviceDetailsPanelProps
             </div>
           </CardHeader>
           <CardContent>
+            {/* System Info Section */}
+            {snmpData && !snmpData.error && snmpData.system_info && (
+              <div className="mb-6 p-4 bg-muted/50 rounded-lg">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div className="flex items-center gap-2">
+                    {isSNMPLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    ) : (
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    )}
+                    <span className="text-muted-foreground">SNMP:</span>
+                    <span className="font-medium">OK</span>
+                  </div>
+                  {snmpData.system_info.firmware_version && (
+                    <div>
+                      <span className="text-muted-foreground">Прошивка: </span>
+                      <span className="font-medium">{snmpData.system_info.firmware_version}</span>
+                    </div>
+                  )}
+                  {snmpData.system_info.ups && (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <Zap className="h-4 w-4 text-yellow-500" />
+                        <span className="text-muted-foreground">UPS:</span>
+                        <span className="font-medium">
+                          {snmpData.system_info.ups.status === 'charging' ? 'Заряжается' :
+                           snmpData.system_info.ups.status === 'discharging' ? 'Разряжается' :
+                           snmpData.system_info.ups.status === 'full' ? 'Заряжен' : 'N/A'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Заряд: </span>
+                        <span className="font-medium">{snmpData.system_info.ups.charge}%</span>
+                      </div>
+                    </>
+                  )}
+                  <div>
+                    <span className="text-muted-foreground">PoE всего: </span>
+                    <span className="font-medium">
+                      {snmpData.poe ? snmpData.poe.reduce((sum, p) => sum + p.power_w, 0).toFixed(1) : 0} Вт
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {ports.length === 0 ? (
               <p className="text-muted-foreground text-center py-8">
                 Порты не настроены
@@ -730,21 +804,56 @@ export function DeviceDetailsPanel({ deviceId, onBack }: DeviceDetailsPanelProps
                                 )}
                               </TableCell>
                               <TableCell>
-                                {snmpPoe && port.linked_camera_id && (
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleRestartPoE(port.port_number)}
-                                    disabled={isRestarting}
-                                    title="Перезагрузить камеру через PoE"
-                                  >
-                                    {isRestarting ? (
-                                      <Loader2 className="h-3 w-3 animate-spin" />
-                                    ) : (
-                                      <Power className="h-3 w-3" />
-                                    )}
-                                  </Button>
-                                )}
+                                <div className="flex gap-2">
+                                  {/* 1. PoE restart - only for copper ports with PoE */}
+                                  {snmpPoe && port.port_type !== 'sfp' && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleRestartPoE(port.port_number)}
+                                      disabled={restartingPort === port.port_number}
+                                      className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                                    >
+                                      {restartingPort === port.port_number ? (
+                                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                      ) : (
+                                        <Power className="h-3 w-3 mr-1" />
+                                      )}
+                                      {restartingPort === port.port_number ? '...' : 'PoE'}
+                                    </Button>
+                                  )}
+                                  {/* 2. Port on/off - for ALL ports */}
+                                  {snmpPort && (
+                                    <>
+                                      {togglingPort === port.port_number ? (
+                                        <Button variant="outline" size="sm" disabled>
+                                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                          ...
+                                        </Button>
+                                      ) : snmpPort?.status === 'up' ? (
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => handleTogglePort(port.port_number, false)}
+                                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                        >
+                                          <ZapOff className="h-3 w-3 mr-1" />
+                                          Откл
+                                        </Button>
+                                      ) : (
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => handleTogglePort(port.port_number, true)}
+                                          className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                        >
+                                          <Zap className="h-3 w-3 mr-1" />
+                                          Вкл
+                                        </Button>
+                                      )}
+                                    </>
+                                  )}
+                                </div>
                               </TableCell>
                             </TableRow>
                           )
@@ -786,181 +895,6 @@ export function DeviceDetailsPanel({ deviceId, onBack }: DeviceDetailsPanelProps
             )}
           </CardContent>
         </Card>
-      )}
-
-      {/* Management Tab */}
-      {activeTab === 'management' && device.type === 'switch' && (
-        <div className="space-y-6">
-          {/* SNMP Status */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Статус SNMP</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isSNMPLoading ? (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Проверка подключения...
-                </div>
-              ) : snmpData?.error ? (
-                <div className="flex items-center gap-2 text-destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  {snmpData.error}
-                </div>
-              ) : snmpData ? (
-                <div className="flex items-center gap-2 text-green-600">
-                  <CheckCircle2 className="h-4 w-4" />
-                  SNMP подключение активно
-                </div>
-              ) : (
-                <Button onClick={loadSNMPData}>
-                  Проверить SNMP
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* System Info */}
-          {snmpData?.system_info && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Системная информация</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <div className="text-sm text-muted-foreground">Версия прошивки</div>
-                    <div className="font-medium">{snmpData.system_info.firmware_version || 'N/A'}</div>
-                  </div>
-                  {snmpData.system_info.ups && (
-                    <>
-                      <div>
-                        <div className="text-sm text-muted-foreground">Статус UPS</div>
-                        <div className="font-medium flex items-center gap-2">
-                          <Zap className="h-4 w-4 text-yellow-500" />
-                          {snmpData.system_info.ups.status === 'charging' ? 'Заряжается' :
-                           snmpData.system_info.ups.status === 'discharging' ? 'Разряжается' :
-                           snmpData.system_info.ups.status === 'full' ? 'Заряжен' : 'N/A'}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-sm text-muted-foreground">Заряд батареи</div>
-                        <div className="font-medium">{snmpData.system_info.ups.charge}%</div>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* PoE Management */}
-          {snmpData && snmpData.poe && snmpData.poe.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Управление PoE</CardTitle>
-                <CardDescription>
-                  Общая мощность: {snmpData.poe.reduce((sum, p) => sum + p.power_w, 0).toFixed(1)} Вт
-                  {' '}• Только copper порты (SFP порты не имеют PoE)
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Порт</TableHead>
-                      <TableHead>Статус</TableHead>
-                      <TableHead>Мощность</TableHead>
-                      <TableHead>Действия</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {snmpData.poe
-                      .filter(poe => {
-                        // Filter out SFP ports - they don't have PoE
-                        const port = ports.find(p => p.port_number === poe.port_number)
-                        return port?.port_type !== 'sfp'
-                      })
-                      .map((poe) => {
-                      const port = ports.find(p => p.port_number === poe.port_number)
-                      const isRestarting = restartingPort === poe.port_number
-
-                      return (
-                        <TableRow key={poe.port_number}>
-                          <TableCell className="font-medium">
-                            Порт {poe.port_number}
-                            {port?.linked_camera_id && (
-                              <Camera className="h-3 w-3 inline ml-2 text-purple-500" />
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {poe.active ? (
-                              <Badge variant="success">
-                                <Zap className="h-3 w-3 mr-1" />
-                                Питание выдаётся
-                              </Badge>
-                            ) : poe.enabled ? (
-                              <Badge variant="warning">Авто (нет нагрузки)</Badge>
-                            ) : (
-                              <Badge variant="destructive">Выключен</Badge>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {poe.active ? `${poe.power_w.toFixed(1)} Вт` : '-'}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-2">
-                              {togglingPoE === poe.port_number ? (
-                                <Button variant="outline" size="sm" disabled>
-                                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                                  Применение...
-                                </Button>
-                              ) : poe.enabled ? (
-                                <Button
-                                  variant="destructive"
-                                  size="sm"
-                                  onClick={() => handleTogglePoE(poe.port_number, false)}
-                                  title="Установить режим Off"
-                                >
-                                  <ZapOff className="h-3 w-3 mr-1" />
-                                  Off
-                                </Button>
-                              ) : (
-                                <Button
-                                  variant="default"
-                                  size="sm"
-                                  onClick={() => handleTogglePoE(poe.port_number, true)}
-                                  title="Установить режим Auto"
-                                >
-                                  <Zap className="h-3 w-3 mr-1" />
-                                  Auto
-                                </Button>
-                              )}
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleRestartPoE(poe.port_number)}
-                                disabled={isRestarting || togglingPoE === poe.port_number || !poe.enabled}
-                                title="Перезагрузить PoE (выкл/вкл)"
-                              >
-                                {isRestarting ? (
-                                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                                ) : (
-                                  <Power className="h-3 w-3 mr-1" />
-                                )}
-                                Restart
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          )}
-        </div>
       )}
 
       {/* Events Tab */}
@@ -1020,100 +954,234 @@ export function DeviceDetailsPanel({ deviceId, onBack }: DeviceDetailsPanelProps
 
       {/* Preview Tab for Cameras */}
       {activeTab === 'preview' && device.type === 'camera' && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Превью камеры</CardTitle>
-                <CardDescription>
-                  {device.camera?.snapshot_url ? 'Снимок с камеры' : 'RTSP поток'}
-                </CardDescription>
+        <CameraPreview
+          device={device}
+          deviceId={deviceId}
+          onDeviceUpdate={loadData}
+        />
+      )}
+    </div>
+  )
+}
+
+// Camera Preview component with ONVIF auto-discovery
+interface CameraPreviewProps {
+  device: any
+  deviceId: number
+  onDeviceUpdate: () => void
+}
+
+function CameraPreview({ device, deviceId, onDeviceUpdate }: CameraPreviewProps) {
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [rtspUrl, setRtspUrl] = useState<string | null>(null)
+  const [previewLoading, setPreviewLoading] = useState(false)
+  const [previewError, setPreviewError] = useState<string | null>(null)
+  const [isDiscovering, setIsDiscovering] = useState(false)
+  const [autoRefresh, setAutoRefresh] = useState(false)
+  const [refreshInterval, setRefreshIntervalState] = useState<ReturnType<typeof setInterval> | null>(null)
+
+  // Set RTSP URL from device data
+  useEffect(() => {
+    if (device.camera?.rtsp_url) {
+      setRtspUrl(device.camera.rtsp_url)
+    }
+  }, [deviceId, device.camera?.rtsp_url])
+
+  // Auto-refresh effect
+  useEffect(() => {
+    if (autoRefresh) {
+      const interval = setInterval(async () => {
+        try {
+          const base64Data = await FetchCameraSnapshotBase64(deviceId)
+          if (base64Data) {
+            setPreviewUrl(base64Data)
+            setPreviewError(null)
+          }
+        } catch (err) {
+          // Silent fail during auto-refresh
+        }
+      }, 83) // ~12 fps
+      setRefreshIntervalState(interval)
+      return () => clearInterval(interval)
+    } else {
+      if (refreshInterval) {
+        clearInterval(refreshInterval)
+        setRefreshIntervalState(null)
+      }
+    }
+  }, [autoRefresh, deviceId])
+
+  const handleDiscover = async () => {
+    setIsDiscovering(true)
+    setPreviewError(null)
+    setPreviewUrl(null)
+    try {
+      // Refresh camera streams via ONVIF
+      await RefreshCameraStreams(deviceId)
+      // Reload device data
+      onDeviceUpdate()
+      // Fetch snapshot via proxy (Go backend fetches and returns base64)
+      const base64Data = await FetchCameraSnapshotBase64(deviceId)
+      if (base64Data) {
+        setPreviewUrl(base64Data)
+      }
+      // Get RTSP URL
+      const streamUrl = await GetCameraStreamURL(deviceId)
+      if (streamUrl) {
+        setRtspUrl(streamUrl)
+      }
+    } catch (err: any) {
+      setPreviewError(err?.message || 'Ошибка ONVIF discovery')
+    } finally {
+      setIsDiscovering(false)
+    }
+  }
+
+  const loadSnapshot = async () => {
+    setPreviewLoading(true)
+    setPreviewError(null)
+    try {
+      // Fetch snapshot via Go proxy - returns base64 data URI
+      const base64Data = await FetchCameraSnapshotBase64(deviceId)
+      if (base64Data) {
+        setPreviewUrl(base64Data)
+      } else {
+        setPreviewError('Не удалось получить снимок')
+      }
+    } catch (err: any) {
+      setPreviewError(err?.message || 'Ошибка получения снимка')
+    } finally {
+      setPreviewLoading(false)
+    }
+  }
+
+  const handleRefresh = async () => {
+    await loadSnapshot()
+  }
+
+  const toggleAutoRefresh = () => {
+    if (!autoRefresh && !previewUrl) {
+      // Start with one snapshot first
+      loadSnapshot()
+    }
+    setAutoRefresh(!autoRefresh)
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Превью камеры</CardTitle>
+            <CardDescription>
+              ONVIF порт: {device.camera?.onvif_port || 80}
+              {device.camera?.snapshot_url && ' • Snapshot настроен'}
+              {autoRefresh && ' • Live режим'}
+            </CardDescription>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            <Button
+              variant={autoRefresh ? 'default' : 'outline'}
+              onClick={toggleAutoRefresh}
+              disabled={isDiscovering}
+            >
+              {autoRefresh ? (
+                <Square className="h-4 w-4 mr-2" />
+              ) : (
+                <Play className="h-4 w-4 mr-2" />
+              )}
+              {autoRefresh ? 'Стоп' : 'Live'}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleRefresh}
+              disabled={previewLoading || isDiscovering || autoRefresh}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${previewLoading ? 'animate-spin' : ''}`} />
+              Снимок
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleDiscover}
+              disabled={isDiscovering || previewLoading}
+            >
+              {isDiscovering ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
+              ONVIF
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {/* Preview area */}
+          <div className="relative bg-black rounded-lg overflow-hidden aspect-video flex items-center justify-center">
+            {(previewLoading || isDiscovering) && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
+                <div className="text-center text-white">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
+                  <p className="text-sm">{isDiscovering ? 'Поиск камеры через ONVIF...' : 'Загрузка снимка...'}</p>
+                </div>
               </div>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setPreviewError(null)
-                  if (device.camera?.snapshot_url) {
-                    // Refresh snapshot with cache-busting
-                    setPreviewUrl(`http://${device.ip_address}${device.camera.snapshot_url.startsWith('/') ? '' : '/'}${device.camera.snapshot_url}?t=${Date.now()}`)
-                  }
-                }}
-                disabled={previewLoading}
-              >
-                <RefreshCw className={`h-4 w-4 mr-2 ${previewLoading ? 'animate-spin' : ''}`} />
-                Обновить
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {device.camera?.snapshot_url ? (
-              <div className="space-y-4">
-                <div className="relative bg-black rounded-lg overflow-hidden aspect-video flex items-center justify-center">
-                  {previewLoading && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
-                      <RefreshCw className="h-8 w-8 animate-spin text-white" />
-                    </div>
-                  )}
-                  {previewError ? (
-                    <div className="text-center text-red-400 p-4">
-                      <AlertCircle className="h-12 w-12 mx-auto mb-2" />
-                      <p>Ошибка загрузки изображения</p>
-                      <p className="text-xs mt-1">{previewError}</p>
-                    </div>
-                  ) : previewUrl ? (
-                    <img
-                      src={previewUrl}
-                      alt="Camera preview"
-                      className="max-w-full max-h-full object-contain"
-                      onLoad={() => setPreviewLoading(false)}
-                      onError={() => {
-                        setPreviewLoading(false)
-                        setPreviewError('Не удалось загрузить изображение с камеры')
-                      }}
-                    />
-                  ) : (
-                    <div className="text-center text-muted-foreground p-8">
-                      <Camera className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                      <p>Нажмите "Обновить" для получения снимка</p>
-                    </div>
-                  )}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  <p>URL снимка: <code className="bg-muted px-1 rounded">{device.camera.snapshot_url}</code></p>
-                </div>
+            )}
+            {previewError ? (
+              <div className="text-center text-red-400 p-4">
+                <AlertCircle className="h-12 w-12 mx-auto mb-2" />
+                <p>Ошибка</p>
+                <p className="text-xs mt-1 max-w-md whitespace-pre-wrap">{previewError}</p>
+                <p className="text-xs mt-3 text-muted-foreground">
+                  Отредактируйте камеру и укажите Snapshot URL, например:
+                </p>
+                <code className="text-xs text-muted-foreground">/ISAPI/Streaming/channels/101/picture</code>
               </div>
-            ) : device.camera?.rtsp_url ? (
-              <div className="space-y-4">
-                <div className="bg-black rounded-lg aspect-video flex items-center justify-center">
-                  <div className="text-center text-muted-foreground p-8">
-                    <Camera className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                    <p>RTSP поток</p>
-                    <p className="text-xs mt-2">Для просмотра RTSP используйте внешний плеер (VLC)</p>
-                  </div>
-                </div>
-                <div className="text-sm text-muted-foreground space-y-2">
-                  <p>RTSP URL: <code className="bg-muted px-1 rounded">{device.camera.rtsp_url}</code></p>
+            ) : previewUrl ? (
+              <img
+                src={previewUrl}
+                alt="Camera preview"
+                className="max-w-full max-h-full object-contain"
+              />
+            ) : !previewLoading && !isDiscovering ? (
+              <div className="text-center text-muted-foreground p-8">
+                <Camera className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                <p>Нажмите "Снимок" для получения изображения</p>
+                <p className="text-xs mt-2 text-muted-foreground/60">
+                  Или "Live" для автообновления
+                </p>
+              </div>
+            ) : null}
+          </div>
+
+          {/* URLs info */}
+          {(device.camera?.snapshot_url || device.camera?.rtsp_url || rtspUrl) && (
+            <div className="text-sm text-muted-foreground space-y-2 p-3 bg-muted/50 rounded-lg">
+              {device.camera?.snapshot_url && (
+                <p>
+                  <span className="text-foreground font-medium">Snapshot:</span>{' '}
+                  <code className="bg-muted px-1 rounded text-xs">{device.camera.snapshot_url}</code>
+                </p>
+              )}
+              {(device.camera?.rtsp_url || rtspUrl) && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-foreground font-medium">RTSP:</span>
+                  <code className="bg-muted px-1 rounded text-xs">{device.camera?.rtsp_url || rtspUrl}</code>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      navigator.clipboard.writeText(device.camera.rtsp_url)
+                      navigator.clipboard.writeText(device.camera?.rtsp_url || rtspUrl || '')
                     }}
                   >
-                    Копировать RTSP URL
+                    Копировать
                   </Button>
                 </div>
-              </div>
-            ) : (
-              <div className="text-center text-muted-foreground py-8">
-                <Camera className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>URL снимка или RTSP поток не настроены</p>
-                <p className="text-sm mt-2">Отредактируйте камеру и укажите Snapshot URL или RTSP URL</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-    </div>
+              )}
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   )
 }

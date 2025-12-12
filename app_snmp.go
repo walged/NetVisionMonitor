@@ -10,7 +10,7 @@ import (
 	"netvisionmonitor/internal/snmp"
 )
 
-// createSNMPClient creates SNMP client based on switch settings
+// createSNMPClient creates SNMP client based on switch settings (for read operations)
 func createSNMPClient(ipAddress string, sw *models.Switch) *snmp.TFortisClient {
 	version := sw.SNMPVersion
 	if version == "" {
@@ -21,6 +21,32 @@ func createSNMPClient(ipAddress string, sw *models.Switch) *snmp.TFortisClient {
 		ipAddress,
 		version,
 		sw.SNMPCommunity,
+		sw.SNMPv3User,
+		sw.SNMPv3Security,
+		sw.SNMPv3AuthProto,
+		sw.SNMPv3AuthPass,
+		sw.SNMPv3PrivProto,
+		sw.SNMPv3PrivPass,
+	)
+}
+
+// createSNMPWriteClient creates SNMP client for write operations (uses write community)
+func createSNMPWriteClient(ipAddress string, sw *models.Switch) *snmp.TFortisClient {
+	version := sw.SNMPVersion
+	if version == "" {
+		version = "v2c"
+	}
+
+	// Use write community if available, otherwise fall back to read community
+	community := sw.SNMPWriteCommunity
+	if community == "" {
+		community = sw.SNMPCommunity
+	}
+
+	return snmp.NewTFortisClientAuto(
+		ipAddress,
+		version,
+		community,
 		sw.SNMPv3User,
 		sw.SNMPv3Security,
 		sw.SNMPv3AuthProto,
@@ -230,9 +256,9 @@ func (a *App) SetPoEEnabled(deviceID int64, portNumber int, enabled bool) error 
 		return fmt.Errorf("switch configuration not found")
 	}
 
-	log.Printf("Creating SNMP client for %s (version: %s)", device.IPAddress, sw.SNMPVersion)
+	log.Printf("Creating SNMP write client for %s (version: %s)", device.IPAddress, sw.SNMPVersion)
 
-	client := createSNMPClient(device.IPAddress, sw)
+	client := createSNMPWriteClient(device.IPAddress, sw)
 	err = client.SetPoEEnabled(portNumber, enabled)
 	if err != nil {
 		log.Printf("SetPoEEnabled failed: %v", err)
@@ -266,7 +292,7 @@ func (a *App) RestartPoEPort(deviceID int64, portNumber int) error {
 		return fmt.Errorf("switch configuration not found")
 	}
 
-	client := createSNMPClient(device.IPAddress, sw)
+	client := createSNMPWriteClient(device.IPAddress, sw)
 
 	// Disable PoE
 	err = client.SetPoEEnabled(portNumber, false)
@@ -286,6 +312,86 @@ func (a *App) RestartPoEPort(deviceID int64, portNumber int) error {
 	}
 
 	log.Printf("PoE enabled on device %d port %d", deviceID, portNumber)
+
+	return nil
+}
+
+// SetPortEnabled enables or disables a port (via ifAdminStatus)
+func (a *App) SetPortEnabled(deviceID int64, portNumber int, enabled bool) error {
+	log.Printf("SetPortEnabled called: device=%d, port=%d, enabled=%v", deviceID, portNumber, enabled)
+
+	if a.db == nil {
+		return fmt.Errorf("database not initialized")
+	}
+
+	deviceRepo := database.NewDeviceRepository(a.db.DB())
+	device, err := deviceRepo.GetByID(deviceID)
+	if err != nil {
+		return fmt.Errorf("device not found: %w", err)
+	}
+
+	switchRepo := database.NewSwitchRepository(a.db.DB())
+	sw, err := switchRepo.GetByDeviceID(deviceID)
+	if err != nil || sw == nil {
+		return fmt.Errorf("switch configuration not found")
+	}
+
+	log.Printf("Creating SNMP write client for %s (version: %s)", device.IPAddress, sw.SNMPVersion)
+
+	client := createSNMPWriteClient(device.IPAddress, sw)
+	err = client.SetPortEnabled(portNumber, enabled)
+	if err != nil {
+		log.Printf("SetPortEnabled failed: %v", err)
+		return fmt.Errorf("failed to set port state: %w", err)
+	}
+
+	action := "disabled"
+	if enabled {
+		action = "enabled"
+	}
+	log.Printf("Port %s on device %d port %d - SUCCESS", action, deviceID, portNumber)
+
+	return nil
+}
+
+// RestartPort restarts a port (turns off, waits, turns on)
+func (a *App) RestartPort(deviceID int64, portNumber int) error {
+	if a.db == nil {
+		return fmt.Errorf("database not initialized")
+	}
+
+	deviceRepo := database.NewDeviceRepository(a.db.DB())
+	device, err := deviceRepo.GetByID(deviceID)
+	if err != nil {
+		return fmt.Errorf("device not found: %w", err)
+	}
+
+	switchRepo := database.NewSwitchRepository(a.db.DB())
+	sw, err := switchRepo.GetByDeviceID(deviceID)
+	if err != nil || sw == nil {
+		return fmt.Errorf("switch configuration not found")
+	}
+
+	client := createSNMPWriteClient(device.IPAddress, sw)
+
+	// Disable port
+	err = client.SetPortEnabled(portNumber, false)
+	if err != nil {
+		return fmt.Errorf("failed to disable port: %w", err)
+	}
+
+	log.Printf("Port disabled on device %d port %d, waiting 3 seconds...", deviceID, portNumber)
+
+	// Wait 3 seconds
+	time.Sleep(3 * time.Second)
+
+	// Enable port
+	err = client.SetPortEnabled(portNumber, true)
+	if err != nil {
+		return fmt.Errorf("failed to enable port: %w", err)
+	}
+
+	log.Printf("Port enabled on device %d port %d", deviceID, portNumber)
 
 	return nil
 }
@@ -385,7 +491,7 @@ func (a *App) SetAutoRestartMode(deviceID int64, portNumber int, mode int) error
 		return fmt.Errorf("switch configuration not found")
 	}
 
-	client := createSNMPClient(device.IPAddress, sw)
+	client := createSNMPWriteClient(device.IPAddress, sw)
 	err = client.SetAutoRestartMode(portNumber, mode)
 	if err != nil {
 		return fmt.Errorf("failed to set AutoRestart mode: %w", err)

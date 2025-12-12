@@ -31,6 +31,7 @@ interface DeviceFormData {
   credential_id?: number
   // Switch
   snmp_community: string
+  snmp_write_community: string
   snmp_version: string
   port_count: number
   sfp_port_count: number
@@ -96,6 +97,7 @@ const defaultFormData: DeviceFormData = {
   manufacturer: '',
   model: '',
   snmp_community: 'public',
+  snmp_write_community: 'private',
   snmp_version: 'v2c',
   port_count: 8,
   sfp_port_count: 2,
@@ -563,14 +565,25 @@ export function DeviceForm({
 
                 {/* SNMPv1/v2c settings */}
                 {(formData.snmp_version === 'v1' || formData.snmp_version === 'v2c') && (
-                  <div className="grid gap-2">
-                    <Label htmlFor="snmp_community">Community String</Label>
-                    <Input
-                      id="snmp_community"
-                      value={formData.snmp_community}
-                      onChange={(e) => updateField('snmp_community', e.target.value)}
-                      placeholder="public"
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="snmp_community">Community (чтение)</Label>
+                      <Input
+                        id="snmp_community"
+                        value={formData.snmp_community}
+                        onChange={(e) => updateField('snmp_community', e.target.value)}
+                        placeholder="public"
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="snmp_write_community">Community (запись)</Label>
+                      <Input
+                        id="snmp_write_community"
+                        value={formData.snmp_write_community}
+                        onChange={(e) => updateField('snmp_write_community', e.target.value)}
+                        placeholder="private"
+                      />
+                    </div>
                   </div>
                 )}
 
@@ -744,44 +757,28 @@ export function DeviceForm({
                   Параметры камеры
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="rtsp_url">RTSP URL</Label>
+                  <Label htmlFor="onvif_port">ONVIF порт</Label>
                   <Input
-                    id="rtsp_url"
-                    value={formData.rtsp_url}
-                    onChange={(e) => updateField('rtsp_url', e.target.value)}
-                    placeholder="rtsp://192.168.1.100:554/stream"
+                    id="onvif_port"
+                    type="number"
+                    value={formData.onvif_port}
+                    onChange={(e) =>
+                      updateField('onvif_port', parseInt(e.target.value) || 80)
+                    }
+                    placeholder="80"
                   />
                 </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="onvif_port">ONVIF порт</Label>
-                    <Input
-                      id="onvif_port"
-                      type="number"
-                      value={formData.onvif_port}
-                      onChange={(e) =>
-                        updateField('onvif_port', parseInt(e.target.value) || 80)
-                      }
-                    />
-                  </div>
-
-                  <div className="grid gap-2">
-                    <Label htmlFor="stream_type">Тип потока</Label>
-                    <Select
-                      value={formData.stream_type}
-                      onValueChange={(v) => updateField('stream_type', v)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="jpeg">JPEG Snapshot</SelectItem>
-                        <SelectItem value="mjpeg">MJPEG</SelectItem>
-                        <SelectItem value="hls">HLS</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="snapshot_url">Snapshot URL (опционально)</Label>
+                  <Input
+                    id="snapshot_url"
+                    value={formData.snapshot_url || ''}
+                    onChange={(e) => updateField('snapshot_url', e.target.value)}
+                    placeholder="/ISAPI/Streaming/channels/101/picture или http://ip/snapshot.jpg"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Если ONVIF не работает, укажите URL вручную. Можно путь или полный URL.
+                  </p>
                 </div>
               </>
             )}

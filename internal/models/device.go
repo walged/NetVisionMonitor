@@ -33,11 +33,12 @@ type Device struct {
 }
 
 type Switch struct {
-	DeviceID      int64  `json:"device_id"`
-	SNMPCommunity string `json:"snmp_community"`
-	SNMPVersion   string `json:"snmp_version"` // v1, v2c, v3
-	PortCount     int    `json:"port_count"`
-	SFPPortCount  int    `json:"sfp_port_count"` // Number of SFP ports (last N ports)
+	DeviceID           int64  `json:"device_id"`
+	SNMPCommunity      string `json:"snmp_community"`
+	SNMPWriteCommunity string `json:"snmp_write_community,omitempty"` // Write community for SET operations
+	SNMPVersion        string `json:"snmp_version"`                   // v1, v2c, v3
+	PortCount          int    `json:"port_count"`
+	SFPPortCount       int    `json:"sfp_port_count"` // Number of SFP ports (last N ports)
 	// SNMPv3 settings
 	SNMPv3User       string `json:"snmpv3_user,omitempty"`
 	SNMPv3Security   string `json:"snmpv3_security,omitempty"`   // noAuthNoPriv, authNoPriv, authPriv

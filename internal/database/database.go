@@ -92,6 +92,7 @@ func (d *Database) Migrate() error {
 		migrationSwitchesSFP,
 		migrationSwitchesUplink,
 		migrationServersUplink,
+		migrationSwitchesWriteCommunity,
 	}
 	for _, migration := range optionalMigrations {
 		d.db.Exec(migration) // Ignore errors for optional migrations
@@ -136,6 +137,7 @@ const migrationSwitches = `
 CREATE TABLE IF NOT EXISTS switches (
 	device_id INTEGER PRIMARY KEY REFERENCES devices(id) ON DELETE CASCADE,
 	snmp_community TEXT DEFAULT '',
+	snmp_write_community TEXT DEFAULT '',
 	snmp_version TEXT DEFAULT 'v2c' CHECK(snmp_version IN ('v1', 'v2c', 'v3')),
 	port_count INTEGER DEFAULT 24,
 	snmpv3_user TEXT DEFAULT '',
@@ -270,6 +272,10 @@ ALTER TABLE switches ADD COLUMN uplink_port_id INTEGER REFERENCES switch_ports(i
 const migrationServersUplink = `
 ALTER TABLE servers ADD COLUMN uplink_switch_id INTEGER REFERENCES devices(id) ON DELETE SET NULL;
 ALTER TABLE servers ADD COLUMN uplink_port_id INTEGER REFERENCES switch_ports(id) ON DELETE SET NULL;
+`
+
+const migrationSwitchesWriteCommunity = `
+ALTER TABLE switches ADD COLUMN snmp_write_community TEXT DEFAULT '';
 `
 
 // FixExistingPortTypes updates port_type for existing ports based on switch sfp_port_count

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"netvisionmonitor/internal/database"
@@ -87,42 +88,77 @@ func (a *App) LinkCameraToPort(portID int64, cameraID *int64) error {
 	return repo.LinkCameraToPort(portID, cameraID)
 }
 
-// GetCameraSnapshot returns the current snapshot URL for a camera
+// GetCameraSnapshot returns the snapshot URL for a camera, auto-discovering via ONVIF if needed
 func (a *App) GetCameraSnapshot(deviceID int64) (string, error) {
 	if a.db == nil {
-		return "", nil
+		return "", fmt.Errorf("database not initialized")
 	}
 
+	// Get device
+	deviceRepo := database.NewDeviceRepository(a.db.DB())
+	device, err := deviceRepo.GetByID(deviceID)
+	if err != nil || device == nil {
+		return "", fmt.Errorf("device not found")
+	}
+
+	// Get camera config
 	cameraRepo := database.NewCameraRepository(a.db.DB())
 	cam, err := cameraRepo.GetByDeviceID(deviceID)
-	if err != nil {
-		return "", err
+	if err != nil || cam == nil {
+		return "", fmt.Errorf("camera configuration not found")
 	}
 
-	if cam != nil && cam.SnapshotURL != "" {
-		return cam.SnapshotURL, nil
+	// If no snapshot URL, try to get via ONVIF
+	if cam.SnapshotURL == "" {
+		err := a.RefreshCameraStreams(deviceID)
+		if err != nil {
+			return "", fmt.Errorf("no snapshot URL configured and ONVIF refresh failed: %w", err)
+		}
+		// Reload camera config
+		cam, _ = cameraRepo.GetByDeviceID(deviceID)
 	}
 
-	return "", nil
+	if cam.SnapshotURL == "" {
+		return "", fmt.Errorf("no snapshot URL available")
+	}
+
+	// Build full URL if needed
+	snapshotURL := cam.SnapshotURL
+	if !hasScheme(snapshotURL) {
+		snapshotURL = fmt.Sprintf("http://%s%s", device.IPAddress, ensureLeadingSlash(cam.SnapshotURL))
+	}
+
+	return snapshotURL, nil
 }
 
-// GetCameraStreamURL returns the RTSP stream URL for a camera
+// GetCameraStreamURL returns the RTSP stream URL for a camera, auto-discovering via ONVIF if needed
 func (a *App) GetCameraStreamURL(deviceID int64) (string, error) {
 	if a.db == nil {
-		return "", nil
+		return "", fmt.Errorf("database not initialized")
 	}
 
+	// Get camera config
 	cameraRepo := database.NewCameraRepository(a.db.DB())
 	cam, err := cameraRepo.GetByDeviceID(deviceID)
-	if err != nil {
-		return "", err
+	if err != nil || cam == nil {
+		return "", fmt.Errorf("camera configuration not found")
 	}
 
-	if cam != nil && cam.RTSPURL != "" {
-		return cam.RTSPURL, nil
+	// If no RTSP URL, try to get via ONVIF
+	if cam.RTSPURL == "" {
+		err := a.RefreshCameraStreams(deviceID)
+		if err != nil {
+			return "", fmt.Errorf("no RTSP URL configured and ONVIF refresh failed: %w", err)
+		}
+		// Reload camera config
+		cam, _ = cameraRepo.GetByDeviceID(deviceID)
 	}
 
-	return "", nil
+	if cam.RTSPURL == "" {
+		return "", fmt.Errorf("no RTSP URL available")
+	}
+
+	return cam.RTSPURL, nil
 }
 
 // SwitchWithPorts combines switch device info with its ports

@@ -17,11 +17,12 @@ const (
 	OIDUPSCharge       = ".1.3.6.1.4.1.42019.3.2.2.1.3.0"
 
 	// Standard MIB-2 OIDs for port info
-	OIDifOperStatus = ".1.3.6.1.2.1.2.2.1.8"  // Port operational status
-	OIDifSpeed      = ".1.3.6.1.2.1.2.2.1.5"  // Port speed
-	OIDifInOctets   = ".1.3.6.1.2.1.2.2.1.10" // RX bytes
-	OIDifOutOctets  = ".1.3.6.1.2.1.2.2.1.16" // TX bytes
-	OIDifDescr      = ".1.3.6.1.2.1.2.2.1.2"  // Interface description
+	OIDifAdminStatus = ".1.3.6.1.2.1.2.2.1.7"  // Port admin status (RW): up(1), down(2), testing(3)
+	OIDifOperStatus  = ".1.3.6.1.2.1.2.2.1.8"  // Port operational status
+	OIDifSpeed       = ".1.3.6.1.2.1.2.2.1.5"  // Port speed
+	OIDifInOctets    = ".1.3.6.1.2.1.2.2.1.10" // RX bytes
+	OIDifOutOctets   = ".1.3.6.1.2.1.2.2.1.16" // TX bytes
+	OIDifDescr       = ".1.3.6.1.2.1.2.2.1.2"  // Interface description
 
 	// TFortis PoE OIDs
 	OIDPoEStateBase  = ".1.3.6.1.4.1.42019.3.2.1.3.1.1.2" // PoE enable/disable (RW)
@@ -38,11 +39,18 @@ const (
 	OIDComfortStartBase = ".1.3.6.1.4.1.42019.3.2.1.2.1.1.5" // ComfortStart delay (RW)
 )
 
-// Port status values
+// Port status values (ifOperStatus and ifAdminStatus)
 const (
 	PortStatusUp      = 1
 	PortStatusDown    = 2
 	PortStatusTesting = 3
+)
+
+// Port admin status values (for ifAdminStatus - RW)
+const (
+	PortAdminUp      = 1 // Port enabled
+	PortAdminDown    = 2 // Port disabled
+	PortAdminTesting = 3 // Port in testing mode
 )
 
 // PoE config values (for OIDPoEStateBase - RW)
@@ -332,6 +340,36 @@ func (t *TFortisClient) RestartPoE(portNum int) error {
 // EnablePoE enables PoE on a port
 func (t *TFortisClient) EnablePoE(portNum int) error {
 	return t.SetPoEEnabled(portNum, true)
+}
+
+// SetPortEnabled enables or disables a port via ifAdminStatus
+// Standard MIB-2: up(1), down(2), testing(3)
+func (t *TFortisClient) SetPortEnabled(portNum int, enabled bool) error {
+	value := PortAdminDown // 2 = disable port
+	if enabled {
+		value = PortAdminUp // 1 = enable port
+	}
+
+	oid := fmt.Sprintf("%s.%d", OIDifAdminStatus, portNum)
+	fmt.Printf("TFortis SetPortEnabled: port=%d, enabled=%v, value=%d (1=Up, 2=Down), oid=%s\n", portNum, enabled, value, oid)
+	err := t.client.SetInteger(oid, value)
+	if err != nil {
+		fmt.Printf("TFortis SetPortEnabled error: %v\n", err)
+	} else {
+		fmt.Printf("TFortis SetPortEnabled: SUCCESS\n")
+	}
+	return err
+}
+
+// RestartPort restarts a port (disable then enable after delay)
+func (t *TFortisClient) RestartPort(portNum int) error {
+	// Disable port
+	err := t.SetPortEnabled(portNum, false)
+	if err != nil {
+		return fmt.Errorf("failed to disable port: %w", err)
+	}
+	// Note: The actual delay should be handled by the caller
+	return nil
 }
 
 // GetAutoRestartInfo retrieves AutoRestart settings for a port

@@ -25,6 +25,11 @@ func (r *SwitchRepository) Create(sw *models.Switch) error {
 		return fmt.Errorf("failed to encrypt SNMP community: %w", err)
 	}
 
+	encryptedWriteCommunity, err := encryption.EncryptIfNotEmpty(sw.SNMPWriteCommunity)
+	if err != nil {
+		return fmt.Errorf("failed to encrypt SNMP write community: %w", err)
+	}
+
 	encryptedAuthPass, err := encryption.EncryptIfNotEmpty(sw.SNMPv3AuthPass)
 	if err != nil {
 		return fmt.Errorf("failed to encrypt SNMPv3 auth password: %w", err)
@@ -36,11 +41,11 @@ func (r *SwitchRepository) Create(sw *models.Switch) error {
 	}
 
 	_, err = r.db.Exec(`
-		INSERT INTO switches (device_id, snmp_community, snmp_version, port_count, sfp_port_count,
+		INSERT INTO switches (device_id, snmp_community, snmp_write_community, snmp_version, port_count, sfp_port_count,
 			snmpv3_user, snmpv3_security, snmpv3_auth_proto, snmpv3_auth_pass, snmpv3_priv_proto, snmpv3_priv_pass,
 			uplink_switch_id, uplink_port_id)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		sw.DeviceID, encryptedCommunity, sw.SNMPVersion, sw.PortCount, sw.SFPPortCount,
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		sw.DeviceID, encryptedCommunity, encryptedWriteCommunity, sw.SNMPVersion, sw.PortCount, sw.SFPPortCount,
 		sw.SNMPv3User, sw.SNMPv3Security, sw.SNMPv3AuthProto, encryptedAuthPass, sw.SNMPv3PrivProto, encryptedPrivPass,
 		sw.UplinkSwitchID, sw.UplinkPortID,
 	)
@@ -71,18 +76,18 @@ func (r *SwitchRepository) Create(sw *models.Switch) error {
 // GetByDeviceID retrieves switch data by device ID
 func (r *SwitchRepository) GetByDeviceID(deviceID int64) (*models.Switch, error) {
 	sw := &models.Switch{}
-	var encryptedCommunity, encryptedAuthPass, encryptedPrivPass string
+	var encryptedCommunity, encryptedWriteCommunity, encryptedAuthPass, encryptedPrivPass string
 	var snmpv3User, snmpv3Security, snmpv3AuthProto, snmpv3PrivProto sql.NullString
 	var uplinkSwitchID, uplinkPortID sql.NullInt64
 
 	err := r.db.QueryRow(`
-		SELECT device_id, snmp_community, snmp_version, port_count, COALESCE(sfp_port_count, 0),
+		SELECT device_id, snmp_community, COALESCE(snmp_write_community, ''), snmp_version, port_count, COALESCE(sfp_port_count, 0),
 			COALESCE(snmpv3_user, ''), COALESCE(snmpv3_security, 'noAuthNoPriv'),
 			COALESCE(snmpv3_auth_proto, ''), COALESCE(snmpv3_auth_pass, ''),
 			COALESCE(snmpv3_priv_proto, ''), COALESCE(snmpv3_priv_pass, ''),
 			uplink_switch_id, uplink_port_id
 		FROM switches WHERE device_id = ?`, deviceID,
-	).Scan(&sw.DeviceID, &encryptedCommunity, &sw.SNMPVersion, &sw.PortCount, &sw.SFPPortCount,
+	).Scan(&sw.DeviceID, &encryptedCommunity, &encryptedWriteCommunity, &sw.SNMPVersion, &sw.PortCount, &sw.SFPPortCount,
 		&snmpv3User, &snmpv3Security, &snmpv3AuthProto, &encryptedAuthPass, &snmpv3PrivProto, &encryptedPrivPass,
 		&uplinkSwitchID, &uplinkPortID)
 
@@ -96,6 +101,11 @@ func (r *SwitchRepository) GetByDeviceID(deviceID int64) (*models.Switch, error)
 	sw.SNMPCommunity, err = encryption.DecryptIfNotEmpty(encryptedCommunity)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decrypt SNMP community: %w", err)
+	}
+
+	sw.SNMPWriteCommunity, err = encryption.DecryptIfNotEmpty(encryptedWriteCommunity)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decrypt SNMP write community: %w", err)
 	}
 
 	sw.SNMPv3AuthPass, err = encryption.DecryptIfNotEmpty(encryptedAuthPass)
@@ -137,6 +147,11 @@ func (r *SwitchRepository) Update(sw *models.Switch) error {
 		return fmt.Errorf("failed to encrypt SNMP community: %w", err)
 	}
 
+	encryptedWriteCommunity, err := encryption.EncryptIfNotEmpty(sw.SNMPWriteCommunity)
+	if err != nil {
+		return fmt.Errorf("failed to encrypt SNMP write community: %w", err)
+	}
+
 	encryptedAuthPass, err := encryption.EncryptIfNotEmpty(sw.SNMPv3AuthPass)
 	if err != nil {
 		return fmt.Errorf("failed to encrypt SNMPv3 auth password: %w", err)
@@ -155,12 +170,12 @@ func (r *SwitchRepository) Update(sw *models.Switch) error {
 	}
 
 	_, err = r.db.Exec(`
-		UPDATE switches SET snmp_community = ?, snmp_version = ?, port_count = ?, sfp_port_count = ?,
+		UPDATE switches SET snmp_community = ?, snmp_write_community = ?, snmp_version = ?, port_count = ?, sfp_port_count = ?,
 			snmpv3_user = ?, snmpv3_security = ?, snmpv3_auth_proto = ?, snmpv3_auth_pass = ?,
 			snmpv3_priv_proto = ?, snmpv3_priv_pass = ?,
 			uplink_switch_id = ?, uplink_port_id = ?
 		WHERE device_id = ?`,
-		encryptedCommunity, sw.SNMPVersion, sw.PortCount, sw.SFPPortCount,
+		encryptedCommunity, encryptedWriteCommunity, sw.SNMPVersion, sw.PortCount, sw.SFPPortCount,
 		sw.SNMPv3User, sw.SNMPv3Security, sw.SNMPv3AuthProto, encryptedAuthPass,
 		sw.SNMPv3PrivProto, encryptedPrivPass,
 		sw.UplinkSwitchID, sw.UplinkPortID, sw.DeviceID,
