@@ -1,0 +1,322 @@
+{
+  "app": {
+    "name": "NetVisionMonitor",
+    "loading": "Loading..."
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "devices": "Devices",
+    "switches": "Switches",
+    "servers": "Servers",
+    "cameras": "Cameras",
+    "networkMap": "Network Map",
+    "schemas": "Schemas",
+    "events": "Events",
+    "settings": "Settings",
+    "about": "About"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "close": "Close",
+    "confirm": "Confirm",
+    "yes": "Yes",
+    "no": "No",
+    "search": "Search...",
+    "refresh": "Refresh",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "name": "Name",
+    "type": "Type",
+    "status": "Status",
+    "actions": "Actions",
+    "details": "Details",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "all": "All",
+    "none": "None",
+    "select": "Select...",
+    "optional": "Optional"
+  },
+  "status": {
+    "online": "Online",
+    "offline": "Offline",
+    "unknown": "Unknown",
+    "up": "Up",
+    "down": "Down"
+  },
+  "devices": {
+    "title": "Devices",
+    "subtitle": "List of all network devices",
+    "addDevice": "Add Device",
+    "editDevice": "Edit Device",
+    "deleteDevice": "Delete Device",
+    "deleteConfirm": "Delete device?",
+    "deleteWarning": "This action cannot be undone. The device and all associated data will be deleted.",
+    "totalDevices": "Total Devices",
+    "inNetwork": "online",
+    "types": {
+      "switch": "Switch",
+      "server": "Server",
+      "camera": "Camera"
+    },
+    "form": {
+      "deviceType": "Device Type",
+      "deviceName": "Name",
+      "ipAddress": "IP Address",
+      "manufacturer": "Manufacturer",
+      "model": "Model",
+      "credentials": "Credentials",
+      "noCredentials": "No credentials"
+    },
+    "stats": {
+      "switches": "Switches",
+      "switchesDesc": "SNMP monitoring",
+      "servers": "Servers",
+      "serversDesc": "Ping/TCP check",
+      "cameras": "Cameras",
+      "camerasDesc": "RTSP/ONVIF"
+    }
+  },
+  "switches": {
+    "title": "Switches",
+    "snmpParams": "SNMP Parameters",
+    "snmpVersion": "SNMP Version",
+    "communityString": "Community String",
+    "portConfig": "Port Configuration",
+    "totalPorts": "Total ports",
+    "copperPorts": "copper",
+    "sfpPorts": "SFP",
+    "uplink": "Optical Uplink (SFP)",
+    "parentSwitch": "Parent Switch",
+    "sfpPort": "SFP Port",
+    "noSfpPorts": "No free SFP ports on the selected switch",
+    "snmpv3": {
+      "user": "User",
+      "securityLevel": "Security Level",
+      "noAuthNoPriv": "NoAuth, NoPriv",
+      "authNoPriv": "Auth, NoPriv",
+      "authPriv": "Auth + Priv",
+      "authProtocol": "Auth Protocol",
+      "authPassword": "Auth Password",
+      "privProtocol": "Priv Protocol",
+      "privPassword": "Priv Password"
+    }
+  },
+  "cameras": {
+    "title": "Cameras",
+    "params": "Camera Parameters",
+    "switchConnection": "Switch Connection",
+    "selectSwitch": "Switch",
+    "selectPort": "Port",
+    "noSwitches": "Add a switch first, then you can add a camera",
+    "allPortsBusy": "All ports of this switch are already occupied by cameras",
+    "rtspUrl": "RTSP URL",
+    "onvifPort": "ONVIF Port",
+    "streamType": "Stream Type",
+    "preview": "Preview",
+    "streamTypes": {
+      "jpeg": "JPEG Snapshot",
+      "mjpeg": "MJPEG",
+      "hls": "HLS"
+    }
+  },
+  "servers": {
+    "title": "Servers",
+    "params": "Server Parameters",
+    "tcpPorts": "TCP Ports (JSON)",
+    "uplink": "Optical Uplink (SFP)"
+  },
+  "networkMap": {
+    "title": "Network Map",
+    "subtitle": "Network infrastructure visualization",
+    "loading": "Loading network map...",
+    "noDevices": "No devices to display",
+    "noDevicesHint": "Add switches or servers on the \"Devices\" page",
+    "ports": "Ports",
+    "linkedDevices": "Linked Devices",
+    "poeControl": "PoE Control",
+    "poeOn": "PoE On",
+    "poeOff": "PoE Off",
+    "restartPoe": "Restart PoE"
+  },
+  "schemas": {
+    "title": "Schemas",
+    "subtitle": "Visual equipment placement diagrams",
+    "createSchema": "Create Schema",
+    "editSchema": "Edit Schema",
+    "deleteSchema": "Delete Schema",
+    "schemaName": "Schema Name",
+    "backgroundImage": "Background Image",
+    "addDevices": "Add Devices",
+    "dragHint": "Drag devices • Mouse wheel to zoom • Alt+click to pan"
+  },
+  "events": {
+    "title": "Events",
+    "subtitle": "Monitoring event log",
+    "noEvents": "No events",
+    "clearEvents": "Clear Events",
+    "clearConfirm": "Clear all events?",
+    "clearWarning": "This action cannot be undone.",
+    "levels": {
+      "info": "Info",
+      "warning": "Warning",
+      "error": "Error",
+      "critical": "Critical"
+    },
+    "types": {
+      "status_change": "Status Change",
+      "port_change": "Port Change",
+      "poe_change": "PoE Change"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "interface": {
+      "title": "Interface",
+      "subtitle": "Application appearance settings",
+      "theme": "Theme",
+      "themeHint": "Choose light or dark theme",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System",
+      "language": "Language",
+      "languageHint": "Select interface language"
+    },
+    "notifications": {
+      "title": "Notifications",
+      "subtitle": "Notification and sound settings",
+      "soundEnabled": "Notification Sound",
+      "soundEnabledHint": "Play sound on events",
+      "volume": "Volume",
+      "testOnline": "Test: Online",
+      "testOffline": "Test: Offline",
+      "notifyOffline": "Device offline",
+      "notifyOfflineHint": "Notify when a device becomes unavailable",
+      "notifyOnline": "Device online",
+      "notifyOnlineHint": "Notify when a device becomes available",
+      "notifyPortChange": "Port changes",
+      "notifyPortChangeHint": "Notify about switch port status changes"
+    },
+    "monitoring": {
+      "title": "Monitoring",
+      "subtitle": "Device polling parameters",
+      "autoStart": "Auto-start monitoring",
+      "autoStartHint": "Start monitoring when application launches",
+      "interval": "Polling interval (sec)",
+      "workers": "Worker threads",
+      "pingTimeout": "Ping timeout (sec)",
+      "snmpTimeout": "SNMP timeout (sec)",
+      "start": "Start",
+      "stop": "Stop",
+      "check": "Check",
+      "running": "Monitoring active"
+    },
+    "credentials": {
+      "title": "Credential Templates",
+      "subtitle": "Manage templates for device connections",
+      "noCredentials": "No saved templates",
+      "addCredential": "Add Template",
+      "editCredential": "Edit Template",
+      "newCredential": "New Template",
+      "credentialHint": "Credential template for device connections",
+      "credentialName": "Name",
+      "credentialType": "Type",
+      "username": "Username / Community",
+      "password": "Password",
+      "note": "Note",
+      "deleteCredential": "Delete template?",
+      "deleteCredentialWarning": "This action cannot be undone."
+    },
+    "system": {
+      "title": "System",
+      "subtitle": "Application startup settings",
+      "autostart": "Start with Windows",
+      "autostartHint": "Launch application on system login (minimized)",
+      "minimizeToTray": "Minimize to tray",
+      "minimizeToTrayHint": "Minimize to system tray instead of exiting when closed"
+    },
+    "data": {
+      "title": "Data",
+      "subtitle": "Backup, restore, and data cleanup",
+      "dataPath": "Data location",
+      "openFolder": "Open",
+      "eventRetention": "Event retention",
+      "eventRetentionHint": "Delete events older than specified period",
+      "days": "days",
+      "export": "Export Configuration",
+      "import": "Import Configuration",
+      "clearEvents": "Clear Events",
+      "clearOldData": "Clear Old Data",
+      "keepEventsFor": "Keep events for the last"
+    },
+    "saved": "Settings saved",
+    "saveSettings": "Save Settings",
+    "saving": "Saving..."
+  },
+  "about": {
+    "title": "About",
+    "version": "Version",
+    "description": "Network device monitoring system",
+    "features": "Features",
+    "featuresList": {
+      "monitoring": "Monitoring of switches, servers, and cameras",
+      "snmp": "SNMP v1/v2c/v3 support",
+      "poe": "PoE port management",
+      "schemas": "Visual placement diagrams",
+      "events": "Event log with notifications",
+      "export": "Configuration export and import"
+    },
+    "technologies": "Technologies",
+    "author": "Developer",
+    "license": "License"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Network Status",
+    "devicesOnline": "Devices Online",
+    "devicesOffline": "Devices Offline",
+    "recentEvents": "Recent Events",
+    "noRecentEvents": "No recent events",
+    "viewAllEvents": "View All Events"
+  },
+  "pagination": {
+    "showing": "Showing",
+    "of": "of",
+    "perPage": "Per page",
+    "firstPage": "First page",
+    "lastPage": "Last page",
+    "previousPage": "Previous",
+    "nextPage": "Next"
+  },
+  "errors": {
+    "loadingData": "Error loading data",
+    "savingData": "Error saving",
+    "deletingData": "Error deleting",
+    "exportError": "Export error",
+    "importError": "Import error",
+    "networkError": "Network error",
+    "unknownError": "Unknown error"
+  },
+  "tray": {
+    "minimize": "Minimize to tray",
+    "open": "Open NetVisionMonitor",
+    "showWindow": "Show main window",
+    "status": "Status",
+    "monitoringOn": "Monitoring: ✓",
+    "monitoringOff": "Monitoring: ✗",
+    "online": "Online",
+    "offline": "Offline",
+    "quit": "Exit",
+    "quitHint": "Completely close application"
+  },
+  "importExport": {
+    "confirmImport": "Confirm Import",
+    "importWarning": "Current data will be replaced with data from the backup.\n\nContinue?"
+  }
+}

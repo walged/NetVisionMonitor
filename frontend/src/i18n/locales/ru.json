@@ -1,0 +1,322 @@
+{
+  "app": {
+    "name": "NetVisionMonitor",
+    "loading": "Загрузка..."
+  },
+  "nav": {
+    "dashboard": "Обзор",
+    "devices": "Устройства",
+    "switches": "Коммутаторы",
+    "servers": "Серверы",
+    "cameras": "Камеры",
+    "networkMap": "Карта сети",
+    "schemas": "Схемы",
+    "events": "События",
+    "settings": "Настройки",
+    "about": "О программе"
+  },
+  "common": {
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "delete": "Удалить",
+    "edit": "Редактировать",
+    "add": "Добавить",
+    "close": "Закрыть",
+    "confirm": "Подтвердить",
+    "yes": "Да",
+    "no": "Нет",
+    "search": "Поиск...",
+    "refresh": "Обновить",
+    "loading": "Загрузка...",
+    "error": "Ошибка",
+    "success": "Успешно",
+    "name": "Название",
+    "type": "Тип",
+    "status": "Статус",
+    "actions": "Действия",
+    "details": "Подробности",
+    "back": "Назад",
+    "next": "Далее",
+    "previous": "Назад",
+    "all": "Все",
+    "none": "Нет",
+    "select": "Выберите...",
+    "optional": "Опционально"
+  },
+  "status": {
+    "online": "В сети",
+    "offline": "Не в сети",
+    "unknown": "Неизвестно",
+    "up": "Активен",
+    "down": "Неактивен"
+  },
+  "devices": {
+    "title": "Устройства",
+    "subtitle": "Список всех устройств в сети",
+    "addDevice": "Добавить устройство",
+    "editDevice": "Редактировать устройство",
+    "deleteDevice": "Удалить устройство",
+    "deleteConfirm": "Удалить устройство?",
+    "deleteWarning": "Это действие нельзя отменить. Устройство и все связанные данные будут удалены.",
+    "totalDevices": "Всего устройств",
+    "inNetwork": "в сети",
+    "types": {
+      "switch": "Коммутатор",
+      "server": "Сервер",
+      "camera": "Камера"
+    },
+    "form": {
+      "deviceType": "Тип устройства",
+      "deviceName": "Название",
+      "ipAddress": "IP-адрес",
+      "manufacturer": "Производитель",
+      "model": "Модель",
+      "credentials": "Учётные данные",
+      "noCredentials": "Без учётных данных"
+    },
+    "stats": {
+      "switches": "Коммутаторы",
+      "switchesDesc": "SNMP мониторинг",
+      "servers": "Серверы",
+      "serversDesc": "Ping/TCP проверка",
+      "cameras": "Камеры",
+      "camerasDesc": "RTSP/ONVIF"
+    }
+  },
+  "switches": {
+    "title": "Коммутаторы",
+    "snmpParams": "Параметры SNMP",
+    "snmpVersion": "Версия SNMP",
+    "communityString": "Community String",
+    "portConfig": "Конфигурация портов",
+    "totalPorts": "Всего портов",
+    "copperPorts": "copper",
+    "sfpPorts": "SFP",
+    "uplink": "Оптический Uplink (SFP)",
+    "parentSwitch": "Родительский коммутатор",
+    "sfpPort": "SFP порт",
+    "noSfpPorts": "Нет свободных SFP портов на выбранном коммутаторе",
+    "snmpv3": {
+      "user": "Пользователь (User)",
+      "securityLevel": "Уровень безопасности",
+      "noAuthNoPriv": "NoAuth, NoPriv",
+      "authNoPriv": "Auth, NoPriv",
+      "authPriv": "Auth + Priv",
+      "authProtocol": "Протокол аутентификации",
+      "authPassword": "Пароль аутентификации",
+      "privProtocol": "Протокол шифрования",
+      "privPassword": "Пароль шифрования"
+    }
+  },
+  "cameras": {
+    "title": "Камеры",
+    "params": "Параметры камеры",
+    "switchConnection": "Подключение к коммутатору",
+    "selectSwitch": "Коммутатор",
+    "selectPort": "Порт",
+    "noSwitches": "Сначала добавьте коммутатор, затем можно добавить камеру",
+    "allPortsBusy": "Все порты этого коммутатора уже заняты камерами",
+    "rtspUrl": "RTSP URL",
+    "onvifPort": "ONVIF порт",
+    "streamType": "Тип потока",
+    "preview": "Превью",
+    "streamTypes": {
+      "jpeg": "JPEG Snapshot",
+      "mjpeg": "MJPEG",
+      "hls": "HLS"
+    }
+  },
+  "servers": {
+    "title": "Серверы",
+    "params": "Параметры сервера",
+    "tcpPorts": "TCP порты (JSON)",
+    "uplink": "Оптический Uplink (SFP)"
+  },
+  "networkMap": {
+    "title": "Карта сети",
+    "subtitle": "Визуализация сетевой инфраструктуры",
+    "loading": "Загрузка карты сети...",
+    "noDevices": "Нет устройств для отображения",
+    "noDevicesHint": "Добавьте коммутаторы или серверы на странице \"Устройства\"",
+    "ports": "Порты",
+    "linkedDevices": "Подключённые устройства",
+    "poeControl": "Управление PoE",
+    "poeOn": "PoE Вкл",
+    "poeOff": "PoE Выкл",
+    "restartPoe": "Перезагрузить PoE"
+  },
+  "schemas": {
+    "title": "Схемы",
+    "subtitle": "Визуальные схемы размещения оборудования",
+    "createSchema": "Создать схему",
+    "editSchema": "Редактировать схему",
+    "deleteSchema": "Удалить схему",
+    "schemaName": "Название схемы",
+    "backgroundImage": "Фоновое изображение",
+    "addDevices": "Добавить устройства",
+    "dragHint": "Перетащите устройства • Колёсико мыши для масштаба • Alt+клик для перемещения"
+  },
+  "events": {
+    "title": "События",
+    "subtitle": "Журнал событий мониторинга",
+    "noEvents": "Нет событий",
+    "clearEvents": "Очистить события",
+    "clearConfirm": "Очистить все события?",
+    "clearWarning": "Это действие нельзя отменить.",
+    "levels": {
+      "info": "Информация",
+      "warning": "Предупреждение",
+      "error": "Ошибка",
+      "critical": "Критическая"
+    },
+    "types": {
+      "status_change": "Изменение статуса",
+      "port_change": "Изменение порта",
+      "poe_change": "Изменение PoE"
+    }
+  },
+  "settings": {
+    "title": "Настройки",
+    "interface": {
+      "title": "Интерфейс",
+      "subtitle": "Настройки внешнего вида приложения",
+      "theme": "Тема оформления",
+      "themeHint": "Выберите светлую или тёмную тему",
+      "light": "Светлая",
+      "dark": "Тёмная",
+      "system": "Система",
+      "language": "Язык",
+      "languageHint": "Выберите язык интерфейса"
+    },
+    "notifications": {
+      "title": "Уведомления",
+      "subtitle": "Настройки уведомлений и звуков",
+      "soundEnabled": "Звук уведомлений",
+      "soundEnabledHint": "Воспроизводить звук при событиях",
+      "volume": "Громкость",
+      "testOnline": "Тест: Online",
+      "testOffline": "Тест: Offline",
+      "notifyOffline": "Устройство offline",
+      "notifyOfflineHint": "Уведомлять когда устройство становится недоступным",
+      "notifyOnline": "Устройство online",
+      "notifyOnlineHint": "Уведомлять когда устройство становится доступным",
+      "notifyPortChange": "Изменение портов",
+      "notifyPortChangeHint": "Уведомлять об изменениях статуса портов коммутаторов"
+    },
+    "monitoring": {
+      "title": "Мониторинг",
+      "subtitle": "Параметры опроса устройств",
+      "autoStart": "Автозапуск мониторинга",
+      "autoStartHint": "Запускать мониторинг при старте приложения",
+      "interval": "Интервал опроса (сек)",
+      "workers": "Рабочих потоков",
+      "pingTimeout": "Таймаут Ping (сек)",
+      "snmpTimeout": "Таймаут SNMP (сек)",
+      "start": "Запустить",
+      "stop": "Остановить",
+      "check": "Проверить",
+      "running": "Мониторинг активен"
+    },
+    "credentials": {
+      "title": "Шаблоны учётных данных",
+      "subtitle": "Управление шаблонами для подключения к устройствам",
+      "noCredentials": "Нет сохранённых шаблонов",
+      "addCredential": "Добавить шаблон",
+      "editCredential": "Редактировать шаблон",
+      "newCredential": "Новый шаблон",
+      "credentialHint": "Шаблон учётных данных для подключения к устройствам",
+      "credentialName": "Название",
+      "credentialType": "Тип",
+      "username": "Имя пользователя / Community",
+      "password": "Пароль",
+      "note": "Заметка",
+      "deleteCredential": "Удалить шаблон?",
+      "deleteCredentialWarning": "Это действие нельзя отменить."
+    },
+    "system": {
+      "title": "Система",
+      "subtitle": "Настройки запуска приложения",
+      "autostart": "Автозапуск с Windows",
+      "autostartHint": "Запускать приложение при входе в систему (свёрнутым)",
+      "minimizeToTray": "Сворачивать в трей",
+      "minimizeToTrayHint": "При закрытии сворачивать в системный трей вместо выхода"
+    },
+    "data": {
+      "title": "Данные",
+      "subtitle": "Резервное копирование, восстановление и очистка данных",
+      "dataPath": "Расположение данных",
+      "openFolder": "Открыть",
+      "eventRetention": "Хранить события",
+      "eventRetentionHint": "Удалять события старше указанного срока",
+      "days": "дней",
+      "export": "Экспорт конфигурации",
+      "import": "Импорт конфигурации",
+      "clearEvents": "Очистить события",
+      "clearOldData": "Очистить старые данные",
+      "keepEventsFor": "Оставить события за последние"
+    },
+    "saved": "Настройки сохранены",
+    "saveSettings": "Сохранить настройки",
+    "saving": "Сохранение..."
+  },
+  "about": {
+    "title": "О программе",
+    "version": "Версия",
+    "description": "Система мониторинга сетевых устройств",
+    "features": "Возможности",
+    "featuresList": {
+      "monitoring": "Мониторинг коммутаторов, серверов и камер",
+      "snmp": "Поддержка SNMP v1/v2c/v3",
+      "poe": "Управление PoE портами",
+      "schemas": "Визуальные схемы размещения",
+      "events": "Журнал событий с уведомлениями",
+      "export": "Экспорт и импорт конфигурации"
+    },
+    "technologies": "Технологии",
+    "author": "Разработчик",
+    "license": "Лицензия"
+  },
+  "dashboard": {
+    "title": "Обзор",
+    "subtitle": "Состояние сети",
+    "devicesOnline": "Устройств в сети",
+    "devicesOffline": "Устройств offline",
+    "recentEvents": "Последние события",
+    "noRecentEvents": "Нет недавних событий",
+    "viewAllEvents": "Все события"
+  },
+  "pagination": {
+    "showing": "Показано",
+    "of": "из",
+    "perPage": "На странице",
+    "firstPage": "Первая страница",
+    "lastPage": "Последняя страница",
+    "previousPage": "Предыдущая",
+    "nextPage": "Следующая"
+  },
+  "errors": {
+    "loadingData": "Ошибка загрузки данных",
+    "savingData": "Ошибка сохранения",
+    "deletingData": "Ошибка удаления",
+    "exportError": "Ошибка экспорта",
+    "importError": "Ошибка импорта",
+    "networkError": "Ошибка сети",
+    "unknownError": "Неизвестная ошибка"
+  },
+  "tray": {
+    "minimize": "Свернуть в трей",
+    "open": "Открыть NetVisionMonitor",
+    "showWindow": "Показать главное окно",
+    "status": "Статус",
+    "monitoringOn": "Мониторинг: ✓",
+    "monitoringOff": "Мониторинг: ✗",
+    "online": "Онлайн",
+    "offline": "Офлайн",
+    "quit": "Выход",
+    "quitHint": "Полностью закрыть приложение"
+  },
+  "importExport": {
+    "confirmImport": "Подтверждение импорта",
+    "importWarning": "Текущие данные будут заменены данными из резервной копии.\n\nПродолжить?"
+  }
+}

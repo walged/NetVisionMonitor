@@ -20,23 +20,24 @@ import {
   LogOut,
 } from "lucide-react"
 import { MinimizeToTray, QuitApp } from "../../../wailsjs/go/main/App"
+import { useTranslation } from "@/i18n"
 
 interface NavItem {
   id: string
-  label: string
+  labelKey: string
   icon: React.ReactNode
 }
 
 const mainNavItems: NavItem[] = [
-  { id: "devices", label: "Устройства", icon: <Monitor className="h-5 w-5" /> },
-  { id: "networkmap", label: "Карта сети", icon: <Map className="h-5 w-5" /> },
-  { id: "schema", label: "Схема", icon: <LayoutGrid className="h-5 w-5" /> },
-  { id: "events", label: "События", icon: <ScrollText className="h-5 w-5" /> },
+  { id: "devices", labelKey: "nav.devices", icon: <Monitor className="h-5 w-5" /> },
+  { id: "networkmap", labelKey: "nav.networkMap", icon: <Map className="h-5 w-5" /> },
+  { id: "schema", labelKey: "nav.schemas", icon: <LayoutGrid className="h-5 w-5" /> },
+  { id: "events", labelKey: "nav.events", icon: <ScrollText className="h-5 w-5" /> },
 ]
 
 const bottomNavItems: NavItem[] = [
-  { id: "settings", label: "Настройки", icon: <Settings className="h-5 w-5" /> },
-  { id: "about", label: "О программе", icon: <Info className="h-5 w-5" /> },
+  { id: "settings", labelKey: "nav.settings", icon: <Settings className="h-5 w-5" /> },
+  { id: "about", labelKey: "nav.about", icon: <Info className="h-5 w-5" /> },
 ]
 
 interface SidebarProps {
@@ -46,6 +47,8 @@ interface SidebarProps {
 }
 
 export function Sidebar({ currentPage, onNavigate, collapsed = false }: SidebarProps) {
+  const { t } = useTranslation()
+
   return (
     <TooltipProvider delayDuration={0}>
       <div
@@ -69,6 +72,7 @@ export function Sidebar({ currentPage, onNavigate, collapsed = false }: SidebarP
               <NavButton
                 key={item.id}
                 item={item}
+                label={t(item.labelKey)}
                 isActive={currentPage === item.id}
                 collapsed={collapsed}
                 onClick={() => onNavigate(item.id)}
@@ -85,6 +89,7 @@ export function Sidebar({ currentPage, onNavigate, collapsed = false }: SidebarP
             <NavButton
               key={item.id}
               item={item}
+              label={t(item.labelKey)}
               isActive={currentPage === item.id}
               collapsed={collapsed}
               onClick={() => onNavigate(item.id)}
@@ -98,13 +103,13 @@ export function Sidebar({ currentPage, onNavigate, collapsed = false }: SidebarP
         <div className="py-2 px-2 space-y-1">
           <ActionButton
             icon={<Minimize2 className="h-5 w-5" />}
-            label="Свернуть в трей"
+            label={t('tray.minimize')}
             collapsed={collapsed}
             onClick={() => MinimizeToTray()}
           />
           <ActionButton
             icon={<LogOut className="h-5 w-5" />}
-            label="Выход"
+            label={t('tray.quit')}
             collapsed={collapsed}
             onClick={() => QuitApp()}
             variant="destructive"
@@ -117,12 +122,13 @@ export function Sidebar({ currentPage, onNavigate, collapsed = false }: SidebarP
 
 interface NavButtonProps {
   item: NavItem
+  label: string
   isActive: boolean
   collapsed: boolean
   onClick: () => void
 }
 
-function NavButton({ item, isActive, collapsed, onClick }: NavButtonProps) {
+function NavButton({ item, label, isActive, collapsed, onClick }: NavButtonProps) {
   const button = (
     <Button
       variant={isActive ? "secondary" : "ghost"}
@@ -133,7 +139,7 @@ function NavButton({ item, isActive, collapsed, onClick }: NavButtonProps) {
       onClick={onClick}
     >
       {item.icon}
-      {!collapsed && <span className="ml-3">{item.label}</span>}
+      {!collapsed && <span className="ml-3">{label}</span>}
     </Button>
   )
 
@@ -142,7 +148,7 @@ function NavButton({ item, isActive, collapsed, onClick }: NavButtonProps) {
       <Tooltip>
         <TooltipTrigger asChild>{button}</TooltipTrigger>
         <TooltipContent side="right">
-          <p>{item.label}</p>
+          <p>{label}</p>
         </TooltipContent>
       </Tooltip>
     )

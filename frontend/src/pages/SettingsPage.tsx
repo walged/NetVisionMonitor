@@ -46,6 +46,7 @@ import {
   Trash,
   Power,
   Play,
+  Languages,
 } from 'lucide-react'
 import {
   GetAppSettings,
@@ -66,6 +67,8 @@ import {
 } from '../../wailsjs/go/main/App'
 import { main } from '../../wailsjs/go/models'
 import { useTheme } from '@/hooks/useTheme'
+import { useTranslation } from '@/i18n'
+import { changeLanguage, languages } from '@/i18n'
 
 type AppSettings = main.AppSettings
 
@@ -79,6 +82,7 @@ interface Credential {
 }
 
 export function SettingsPage() {
+  const { t, i18n } = useTranslation()
   const { theme, setTheme } = useTheme()
   const [settings, setSettings] = useState<AppSettings>(
     main.AppSettings.createFrom({
@@ -319,25 +323,25 @@ export function SettingsPage() {
       {saveSuccess && (
         <div className="flex items-center gap-2 p-4 text-green-500 bg-green-500/10 rounded-lg">
           <CheckCircle className="h-5 w-5" />
-          <span>Настройки сохранены</span>
+          <span>{t('settings.saved')}</span>
         </div>
       )}
 
-      {/* Theme Settings */}
+      {/* Interface Settings */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Sun className="h-5 w-5" />
-            Интерфейс
+            {t('settings.interface.title')}
           </CardTitle>
-          <CardDescription>Настройки внешнего вида приложения</CardDescription>
+          <CardDescription>{t('settings.interface.subtitle')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium">Тема оформления</p>
+              <p className="font-medium">{t('settings.interface.theme')}</p>
               <p className="text-sm text-muted-foreground">
-                Выберите светлую или тёмную тему
+                {t('settings.interface.themeHint')}
               </p>
             </div>
             <div className="flex gap-2">
@@ -347,7 +351,7 @@ export function SettingsPage() {
                 onClick={() => setTheme('light')}
               >
                 <Sun className="h-4 w-4 mr-2" />
-                Светлая
+                {t('settings.interface.light')}
               </Button>
               <Button
                 variant={theme === 'dark' ? 'default' : 'outline'}
@@ -355,7 +359,7 @@ export function SettingsPage() {
                 onClick={() => setTheme('dark')}
               >
                 <Moon className="h-4 w-4 mr-2" />
-                Тёмная
+                {t('settings.interface.dark')}
               </Button>
               <Button
                 variant={theme === 'system' ? 'default' : 'outline'}
@@ -363,8 +367,30 @@ export function SettingsPage() {
                 onClick={() => setTheme('system')}
               >
                 <Monitor className="h-4 w-4 mr-2" />
-                Система
+                {t('settings.interface.system')}
               </Button>
+            </div>
+          </div>
+          <Separator />
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium">{t('settings.interface.language')}</p>
+              <p className="text-sm text-muted-foreground">
+                {t('settings.interface.languageHint')}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              {languages.map((lang) => (
+                <Button
+                  key={lang.code}
+                  variant={i18n.language === lang.code ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => changeLanguage(lang.code)}
+                >
+                  <Languages className="h-4 w-4 mr-2" />
+                  {lang.name}
+                </Button>
+              ))}
             </div>
           </div>
         </CardContent>
@@ -375,16 +401,16 @@ export function SettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             {settings.sound_enabled ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
-            Уведомления
+            {t('settings.notifications.title')}
           </CardTitle>
-          <CardDescription>Настройки уведомлений и звуков</CardDescription>
+          <CardDescription>{t('settings.notifications.subtitle')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium">Звук уведомлений</p>
+              <p className="font-medium">{t('settings.notifications.soundEnabled')}</p>
               <p className="text-sm text-muted-foreground">
-                Воспроизводить звук при событиях
+                {t('settings.notifications.soundEnabledHint')}
               </p>
             </div>
             <Switch
@@ -397,7 +423,7 @@ export function SettingsPage() {
             <>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label>Громкость: {Math.round(settings.sound_volume * 100)}%</Label>
+                  <Label>{t('settings.notifications.volume')}: {Math.round(settings.sound_volume * 100)}%</Label>
                 </div>
                 <input
                   type="range"
@@ -417,7 +443,7 @@ export function SettingsPage() {
                   className="flex-1"
                 >
                   <Play className="h-4 w-4 mr-2" />
-                  Тест: Online
+                  {t('settings.notifications.testOnline')}
                 </Button>
                 <Button
                   variant="outline"
@@ -426,7 +452,7 @@ export function SettingsPage() {
                   className="flex-1"
                 >
                   <Play className="h-4 w-4 mr-2" />
-                  Тест: Offline
+                  {t('settings.notifications.testOffline')}
                 </Button>
               </div>
             </>
@@ -435,9 +461,9 @@ export function SettingsPage() {
           <Separator />
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium">Устройство offline</p>
+              <p className="font-medium">{t('settings.notifications.notifyOffline')}</p>
               <p className="text-sm text-muted-foreground">
-                Уведомлять когда устройство становится недоступным
+                {t('settings.notifications.notifyOfflineHint')}
               </p>
             </div>
             <Switch
@@ -447,9 +473,9 @@ export function SettingsPage() {
           </div>
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium">Устройство online</p>
+              <p className="font-medium">{t('settings.notifications.notifyOnline')}</p>
               <p className="text-sm text-muted-foreground">
-                Уведомлять когда устройство становится доступным
+                {t('settings.notifications.notifyOnlineHint')}
               </p>
             </div>
             <Switch
@@ -459,9 +485,9 @@ export function SettingsPage() {
           </div>
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium">Изменение портов</p>
+              <p className="font-medium">{t('settings.notifications.notifyPortChange')}</p>
               <p className="text-sm text-muted-foreground">
-                Уведомлять об изменениях статуса портов коммутаторов
+                {t('settings.notifications.notifyPortChangeHint')}
               </p>
             </div>
             <Switch
@@ -481,16 +507,16 @@ export function SettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" />
-            Мониторинг
+            {t('settings.monitoring.title')}
           </CardTitle>
-          <CardDescription>Параметры опроса устройств</CardDescription>
+          <CardDescription>{t('settings.monitoring.subtitle')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium">Автозапуск мониторинга</p>
+              <p className="font-medium">{t('settings.monitoring.autoStart')}</p>
               <p className="text-sm text-muted-foreground">
-                Запускать мониторинг при старте приложения
+                {t('settings.monitoring.autoStartHint')}
               </p>
             </div>
             <Switch
@@ -501,7 +527,7 @@ export function SettingsPage() {
           <Separator />
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Интервал опроса (сек)</Label>
+              <Label>{t('settings.monitoring.interval')}</Label>
               <Input
                 type="number"
                 min={5}
@@ -513,7 +539,7 @@ export function SettingsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Рабочих потоков</Label>
+              <Label>{t('settings.monitoring.workers')}</Label>
               <Input
                 type="number"
                 min={1}
@@ -525,7 +551,7 @@ export function SettingsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Таймаут Ping (сек)</Label>
+              <Label>{t('settings.monitoring.pingTimeout')}</Label>
               <Input
                 type="number"
                 min={1}
@@ -537,7 +563,7 @@ export function SettingsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Таймаут SNMP (сек)</Label>
+              <Label>{t('settings.monitoring.snmpTimeout')}</Label>
               <Input
                 type="number"
                 min={1}
@@ -557,16 +583,16 @@ export function SettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Key className="h-5 w-5" />
-            Шаблоны учётных данных
+            {t('settings.credentials.title')}
           </CardTitle>
           <CardDescription>
-            Управление шаблонами для подключения к устройствам
+            {t('settings.credentials.subtitle')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {credentials.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Нет сохранённых шаблонов
+              {t('settings.credentials.noCredentials')}
             </p>
           ) : (
             <div className="space-y-2">
@@ -618,7 +644,7 @@ export function SettingsPage() {
             }}
           >
             <Plus className="h-4 w-4 mr-2" />
-            Добавить шаблон
+            {t('settings.credentials.addCredential')}
           </Button>
         </CardContent>
       </Card>
@@ -628,16 +654,16 @@ export function SettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Power className="h-5 w-5" />
-            Система
+            {t('settings.system.title')}
           </CardTitle>
-          <CardDescription>Настройки запуска приложения</CardDescription>
+          <CardDescription>{t('settings.system.subtitle')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium">Автозапуск с Windows</p>
+              <p className="font-medium">{t('settings.system.autostart')}</p>
               <p className="text-sm text-muted-foreground">
-                Запускать приложение при входе в систему (свёрнутым)
+                {t('settings.system.autostartHint')}
               </p>
             </div>
             <Switch
@@ -648,9 +674,9 @@ export function SettingsPage() {
           <Separator />
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium">Сворачивать в трей</p>
+              <p className="font-medium">{t('settings.system.minimizeToTray')}</p>
               <p className="text-sm text-muted-foreground">
-                При закрытии сворачивать в системный трей вместо выхода
+                {t('settings.system.minimizeToTrayHint')}
               </p>
             </div>
             <Switch
@@ -666,31 +692,31 @@ export function SettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Download className="h-5 w-5" />
-            Данные
+            {t('settings.data.title')}
           </CardTitle>
           <CardDescription>
-            Резервное копирование, восстановление и очистка данных
+            {t('settings.data.subtitle')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium">Расположение данных</p>
+              <p className="font-medium">{t('settings.data.dataPath')}</p>
               <p className="text-sm text-muted-foreground font-mono">
-                {dataPath || 'Загрузка...'}
+                {dataPath || t('common.loading')}
               </p>
             </div>
             <Button variant="outline" size="sm" onClick={() => OpenDataFolder()}>
               <FolderOpen className="h-4 w-4 mr-2" />
-              Открыть
+              {t('settings.data.openFolder')}
             </Button>
           </div>
           <Separator />
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium">Хранить события</p>
+              <p className="font-medium">{t('settings.data.eventRetention')}</p>
               <p className="text-sm text-muted-foreground">
-                Удалять события старше указанного срока
+                {t('settings.data.eventRetentionHint')}
               </p>
             </div>
             <Select
@@ -701,11 +727,11 @@ export function SettingsPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="7">7 дней</SelectItem>
-                <SelectItem value="14">14 дней</SelectItem>
-                <SelectItem value="30">30 дней</SelectItem>
-                <SelectItem value="60">60 дней</SelectItem>
-                <SelectItem value="90">90 дней</SelectItem>
+                <SelectItem value="7">7 {t('settings.data.days')}</SelectItem>
+                <SelectItem value="14">14 {t('settings.data.days')}</SelectItem>
+                <SelectItem value="30">30 {t('settings.data.days')}</SelectItem>
+                <SelectItem value="60">60 {t('settings.data.days')}</SelectItem>
+                <SelectItem value="90">90 {t('settings.data.days')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -713,18 +739,18 @@ export function SettingsPage() {
           <div className="flex gap-4">
             <Button variant="outline" onClick={handleExport}>
               <Download className="h-4 w-4 mr-2" />
-              Экспорт конфигурации
+              {t('settings.data.export')}
             </Button>
             <Button variant="outline" onClick={handleImport}>
               <Upload className="h-4 w-4 mr-2" />
-              Импорт конфигурации
+              {t('settings.data.import')}
             </Button>
             <Button
               variant="outline"
               onClick={() => setClearDataDialogOpen(true)}
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              Очистить события
+              {t('settings.data.clearEvents')}
             </Button>
           </div>
         </CardContent>
@@ -735,7 +761,7 @@ export function SettingsPage() {
         <div className="sticky bottom-4 flex justify-end">
           <Button onClick={handleSave} disabled={isSaving} size="lg">
             <Save className="h-4 w-4 mr-2" />
-            {isSaving ? 'Сохранение...' : 'Сохранить настройки'}
+            {isSaving ? t('settings.saving') : t('settings.saveSettings')}
           </Button>
         </div>
       )}
@@ -745,15 +771,15 @@ export function SettingsPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editingCredential?.id ? 'Редактировать шаблон' : 'Новый шаблон'}
+              {editingCredential?.id ? t('settings.credentials.editCredential') : t('settings.credentials.newCredential')}
             </DialogTitle>
             <DialogDescription>
-              Шаблон учётных данных для подключения к устройствам
+              {t('settings.credentials.credentialHint')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Название</Label>
+              <Label>{t('settings.credentials.credentialName')}</Label>
               <Input
                 value={editingCredential?.name || ''}
                 onChange={(e) =>
@@ -763,7 +789,7 @@ export function SettingsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Тип</Label>
+              <Label>{t('settings.credentials.credentialType')}</Label>
               <Select
                 value={editingCredential?.type || 'snmp'}
                 onValueChange={(v) =>
@@ -782,7 +808,7 @@ export function SettingsPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Имя пользователя / Community</Label>
+              <Label>{t('settings.credentials.username')}</Label>
               <Input
                 value={editingCredential?.username || ''}
                 onChange={(e) =>
@@ -792,7 +818,7 @@ export function SettingsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Пароль</Label>
+              <Label>{t('settings.credentials.password')}</Label>
               <Input
                 type="password"
                 value={editingCredential?.password || ''}
@@ -802,13 +828,13 @@ export function SettingsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Заметка</Label>
+              <Label>{t('settings.credentials.note')}</Label>
               <Input
                 value={editingCredential?.note || ''}
                 onChange={(e) =>
                   setEditingCredential((prev) => ({ ...prev, note: e.target.value }))
                 }
-                placeholder="Опционально"
+                placeholder={t('common.optional') as string}
               />
             </div>
           </div>
@@ -817,9 +843,9 @@ export function SettingsPage() {
               variant="outline"
               onClick={() => setCredentialDialogOpen(false)}
             >
-              Отмена
+              {t('common.cancel')}
             </Button>
-            <Button onClick={handleSaveCredential}>Сохранить</Button>
+            <Button onClick={handleSaveCredential}>{t('common.save')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -831,17 +857,17 @@ export function SettingsPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Удалить шаблон?</DialogTitle>
+            <DialogTitle>{t('settings.credentials.deleteCredential')}</DialogTitle>
             <DialogDescription>
-              Это действие нельзя отменить.
+              {t('settings.credentials.deleteCredentialWarning')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteCredentialId(null)}>
-              Отмена
+              {t('common.cancel')}
             </Button>
             <Button variant="destructive" onClick={handleDeleteCredential}>
-              Удалить
+              {t('common.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -851,14 +877,14 @@ export function SettingsPage() {
       <Dialog open={clearDataDialogOpen} onOpenChange={setClearDataDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Очистить старые данные</DialogTitle>
+            <DialogTitle>{t('settings.data.clearOldData')}</DialogTitle>
             <DialogDescription>
-              Удалить события старше указанного количества дней
+              {t('settings.data.eventRetentionHint')}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <div className="space-y-2">
-              <Label>Оставить события за последние</Label>
+              <Label>{t('settings.data.keepEventsFor')}</Label>
               <Select
                 value={daysToKeep.toString()}
                 onValueChange={(v) => setDaysToKeep(parseInt(v))}
@@ -867,10 +893,10 @@ export function SettingsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="7">7 дней</SelectItem>
-                  <SelectItem value="14">14 дней</SelectItem>
-                  <SelectItem value="30">30 дней</SelectItem>
-                  <SelectItem value="60">60 дней</SelectItem>
+                  <SelectItem value="7">7 {t('settings.data.days')}</SelectItem>
+                  <SelectItem value="14">14 {t('settings.data.days')}</SelectItem>
+                  <SelectItem value="30">30 {t('settings.data.days')}</SelectItem>
+                  <SelectItem value="60">60 {t('settings.data.days')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -880,9 +906,9 @@ export function SettingsPage() {
               variant="outline"
               onClick={() => setClearDataDialogOpen(false)}
             >
-              Отмена
+              {t('common.cancel')}
             </Button>
-            <Button onClick={handleClearData}>Очистить</Button>
+            <Button onClick={handleClearData}>{t('settings.data.clearEvents')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

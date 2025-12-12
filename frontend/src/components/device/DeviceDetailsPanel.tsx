@@ -142,7 +142,10 @@ export function DeviceDetailsPanel({ deviceId, onBack }: DeviceDetailsPanelProps
   const [isLoading, setIsLoading] = useState(true)
   const [isSNMPLoading, setIsSNMPLoading] = useState(false)
   const [restartingPort, setRestartingPort] = useState<number | null>(null)
-  const [activeTab, setActiveTab] = useState<'overview' | 'ports' | 'management' | 'events'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'ports' | 'management' | 'events' | 'preview'>('overview')
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [previewLoading, setPreviewLoading] = useState(false)
+  const [previewError, setPreviewError] = useState<string | null>(null)
 
   const loadData = useCallback(async () => {
     setIsLoading(true)
@@ -389,6 +392,15 @@ export function DeviceDetailsPanel({ deviceId, onBack }: DeviceDetailsPanelProps
               Управление
             </Button>
           </>
+        )}
+        {device.type === 'camera' && (
+          <Button
+            variant={activeTab === 'preview' ? 'default' : 'outline'}
+            onClick={() => setActiveTab('preview')}
+          >
+            <Monitor className="h-4 w-4 mr-2" />
+            Превью
+          </Button>
         )}
         <Button
           variant={activeTab === 'events' ? 'default' : 'outline'}
@@ -1001,6 +1013,103 @@ export function DeviceDetailsPanel({ deviceId, onBack }: DeviceDetailsPanelProps
                   ))}
                 </TableBody>
               </Table>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Preview Tab for Cameras */}
+      {activeTab === 'preview' && device.type === 'camera' && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Превью камеры</CardTitle>
+                <CardDescription>
+                  {device.camera?.snapshot_url ? 'Снимок с камеры' : 'RTSP поток'}
+                </CardDescription>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setPreviewError(null)
+                  if (device.camera?.snapshot_url) {
+                    // Refresh snapshot with cache-busting
+                    setPreviewUrl(`http://${device.ip_address}${device.camera.snapshot_url.startsWith('/') ? '' : '/'}${device.camera.snapshot_url}?t=${Date.now()}`)
+                  }
+                }}
+                disabled={previewLoading}
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${previewLoading ? 'animate-spin' : ''}`} />
+                Обновить
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {device.camera?.snapshot_url ? (
+              <div className="space-y-4">
+                <div className="relative bg-black rounded-lg overflow-hidden aspect-video flex items-center justify-center">
+                  {previewLoading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
+                      <RefreshCw className="h-8 w-8 animate-spin text-white" />
+                    </div>
+                  )}
+                  {previewError ? (
+                    <div className="text-center text-red-400 p-4">
+                      <AlertCircle className="h-12 w-12 mx-auto mb-2" />
+                      <p>Ошибка загрузки изображения</p>
+                      <p className="text-xs mt-1">{previewError}</p>
+                    </div>
+                  ) : previewUrl ? (
+                    <img
+                      src={previewUrl}
+                      alt="Camera preview"
+                      className="max-w-full max-h-full object-contain"
+                      onLoad={() => setPreviewLoading(false)}
+                      onError={() => {
+                        setPreviewLoading(false)
+                        setPreviewError('Не удалось загрузить изображение с камеры')
+                      }}
+                    />
+                  ) : (
+                    <div className="text-center text-muted-foreground p-8">
+                      <Camera className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                      <p>Нажмите "Обновить" для получения снимка</p>
+                    </div>
+                  )}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  <p>URL снимка: <code className="bg-muted px-1 rounded">{device.camera.snapshot_url}</code></p>
+                </div>
+              </div>
+            ) : device.camera?.rtsp_url ? (
+              <div className="space-y-4">
+                <div className="bg-black rounded-lg aspect-video flex items-center justify-center">
+                  <div className="text-center text-muted-foreground p-8">
+                    <Camera className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                    <p>RTSP поток</p>
+                    <p className="text-xs mt-2">Для просмотра RTSP используйте внешний плеер (VLC)</p>
+                  </div>
+                </div>
+                <div className="text-sm text-muted-foreground space-y-2">
+                  <p>RTSP URL: <code className="bg-muted px-1 rounded">{device.camera.rtsp_url}</code></p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      navigator.clipboard.writeText(device.camera.rtsp_url)
+                    }}
+                  >
+                    Копировать RTSP URL
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center text-muted-foreground py-8">
+                <Camera className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>URL снимка или RTSP поток не настроены</p>
+                <p className="text-sm mt-2">Отредактируйте камеру и укажите Snapshot URL или RTSP URL</p>
+              </div>
             )}
           </CardContent>
         </Card>

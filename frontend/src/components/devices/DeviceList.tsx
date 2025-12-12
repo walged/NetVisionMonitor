@@ -37,6 +37,7 @@ import {
   XCircle,
 } from 'lucide-react'
 import { PingDevice, OpenPingCmd } from '../../../wailsjs/go/main/App'
+import { useTranslation } from '@/i18n'
 
 interface Device {
   id: number
@@ -63,22 +64,10 @@ const deviceTypeIcons: Record<string, React.ReactNode> = {
   camera: <Camera className="h-5 w-5" />,
 }
 
-const deviceTypeLabels: Record<string, string> = {
-  switch: 'Коммутатор',
-  server: 'Сервер',
-  camera: 'Камера',
-}
-
 const statusColors: Record<string, string> = {
   online: 'text-green-500',
   offline: 'text-red-500',
   unknown: 'text-gray-500',
-}
-
-const statusLabels: Record<string, string> = {
-  online: 'В сети',
-  offline: 'Недоступен',
-  unknown: 'Неизвестно',
 }
 
 export function DeviceList({
@@ -88,9 +77,22 @@ export function DeviceList({
   onView,
   isLoading = false,
 }: DeviceListProps) {
+  const { t } = useTranslation()
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+
+  const deviceTypeLabels: Record<string, string> = {
+    switch: t('devices.types.switch') as string,
+    server: t('devices.types.server') as string,
+    camera: t('devices.types.camera') as string,
+  }
+
+  const statusLabels: Record<string, string> = {
+    online: t('status.online') as string,
+    offline: t('status.offline') as string,
+    unknown: t('status.unknown') as string,
+  }
 
   const filteredDevices = devices.filter((device) => {
     const matchesSearch =
@@ -112,7 +114,7 @@ export function DeviceList({
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Поиск по названию, IP или модели..."
+            placeholder={t('common.search') as string}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-10"
@@ -120,24 +122,24 @@ export function DeviceList({
         </div>
         <Select value={typeFilter} onValueChange={setTypeFilter}>
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Тип устройства" />
+            <SelectValue placeholder={t('devices.form.deviceType')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Все типы</SelectItem>
-            <SelectItem value="switch">Коммутаторы</SelectItem>
-            <SelectItem value="server">Серверы</SelectItem>
-            <SelectItem value="camera">Камеры</SelectItem>
+            <SelectItem value="all">{t('common.all')}</SelectItem>
+            <SelectItem value="switch">{t('devices.stats.switches')}</SelectItem>
+            <SelectItem value="server">{t('devices.stats.servers')}</SelectItem>
+            <SelectItem value="camera">{t('devices.stats.cameras')}</SelectItem>
           </SelectContent>
         </Select>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[150px]">
-            <SelectValue placeholder="Статус" />
+            <SelectValue placeholder={t('common.status')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Все</SelectItem>
-            <SelectItem value="online">В сети</SelectItem>
-            <SelectItem value="offline">Недоступны</SelectItem>
-            <SelectItem value="unknown">Неизвестно</SelectItem>
+            <SelectItem value="all">{t('common.all')}</SelectItem>
+            <SelectItem value="online">{t('status.online')}</SelectItem>
+            <SelectItem value="offline">{t('status.offline')}</SelectItem>
+            <SelectItem value="unknown">{t('status.unknown')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -145,13 +147,13 @@ export function DeviceList({
       {/* Device Cards */}
       {isLoading ? (
         <div className="text-center py-8 text-muted-foreground">
-          Загрузка устройств...
+          {t('common.loading')}
         </div>
       ) : filteredDevices.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
           {devices.length === 0
-            ? 'Нет устройств. Добавьте первое устройство.'
-            : 'Нет устройств, соответствующих фильтрам.'}
+            ? t('devices.addDevice')
+            : t('events.noEvents')}
         </div>
       ) : (
         <div className="grid gap-3">
@@ -159,6 +161,8 @@ export function DeviceList({
             <DeviceCard
               key={device.id}
               device={device}
+              deviceTypeLabels={deviceTypeLabels}
+              statusLabels={statusLabels}
               onEdit={() => onEdit(device)}
               onDelete={() => onDelete(device.id)}
               onView={onView ? () => onView(device) : undefined}
@@ -183,12 +187,15 @@ interface PingResult {
 
 interface DeviceCardProps {
   device: Device
+  deviceTypeLabels: Record<string, string>
+  statusLabels: Record<string, string>
   onEdit: () => void
   onDelete: () => void
   onView?: () => void
 }
 
-function DeviceCard({ device, onEdit, onDelete, onView }: DeviceCardProps) {
+function DeviceCard({ device, deviceTypeLabels, statusLabels, onEdit, onDelete, onView }: DeviceCardProps) {
+  const { t } = useTranslation()
   const [isPinging, setIsPinging] = useState(false)
   const [pingResult, setPingResult] = useState<PingResult | null>(null)
   const [pingOpen, setPingOpen] = useState(false)
@@ -208,7 +215,7 @@ function DeviceCard({ device, onEdit, onDelete, onView }: DeviceCardProps) {
         avg_latency_ms: 0,
         min_latency_ms: 0,
         max_latency_ms: 0,
-        error: err instanceof Error ? err.message : 'Ошибка пинга',
+        error: err instanceof Error ? err.message : t('common.error') as string,
       })
     } finally {
       setIsPinging(false)
@@ -291,7 +298,7 @@ function DeviceCard({ device, onEdit, onDelete, onView }: DeviceCardProps) {
                       ) : (
                         <Radio className="h-4 w-4 mr-2" />
                       )}
-                      Внутренний
+                      Internal
                     </Button>
                     <Button
                       size="sm"
@@ -313,20 +320,20 @@ function DeviceCard({ device, onEdit, onDelete, onView }: DeviceCardProps) {
                           <XCircle className="h-4 w-4 text-red-500" />
                         )}
                         <span className={pingResult.success ? 'text-green-500' : 'text-red-500'}>
-                          {pingResult.success ? 'Доступен' : 'Недоступен'}
+                          {pingResult.success ? t('status.online') : t('status.offline')}
                         </span>
                       </div>
                       {pingResult.success ? (
                         <>
-                          <div>Отправлено: {pingResult.packets_sent}, Получено: {pingResult.packets_recv}</div>
-                          <div>Задержка: {pingResult.avg_latency_ms.toFixed(0)} мс</div>
+                          <div>Sent: {pingResult.packets_sent}, Received: {pingResult.packets_recv}</div>
+                          <div>Latency: {pingResult.avg_latency_ms.toFixed(0)} ms</div>
                           <div className="text-xs text-muted-foreground">
-                            (мин: {pingResult.min_latency_ms.toFixed(0)}, макс: {pingResult.max_latency_ms.toFixed(0)} мс)
+                            (min: {pingResult.min_latency_ms.toFixed(0)}, max: {pingResult.max_latency_ms.toFixed(0)} ms)
                           </div>
                         </>
                       ) : (
                         <div className="text-muted-foreground">
-                          {pingResult.error || 'Устройство не отвечает'}
+                          {pingResult.error || t('status.offline')}
                         </div>
                       )}
                     </div>
@@ -343,7 +350,7 @@ function DeviceCard({ device, onEdit, onDelete, onView }: DeviceCardProps) {
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Подробнее</p>
+                  <p>{t('common.details')}</p>
                 </TooltipContent>
               </Tooltip>
             )}
@@ -355,7 +362,7 @@ function DeviceCard({ device, onEdit, onDelete, onView }: DeviceCardProps) {
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Редактировать</p>
+                <p>{t('common.edit')}</p>
               </TooltipContent>
             </Tooltip>
 
@@ -371,7 +378,7 @@ function DeviceCard({ device, onEdit, onDelete, onView }: DeviceCardProps) {
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Удалить</p>
+                <p>{t('common.delete')}</p>
               </TooltipContent>
             </Tooltip>
           </div>

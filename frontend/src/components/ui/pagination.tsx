@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button'
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
+import { useTranslation } from '@/i18n'
 
 interface PaginationProps {
   currentPage: number
@@ -20,6 +21,7 @@ export function Pagination({
   onPageSizeChange,
   pageSizeOptions = [20, 50, 100],
 }: PaginationProps) {
+  const { t } = useTranslation()
   const startItem = (currentPage - 1) * pageSize + 1
   const endItem = Math.min(currentPage * pageSize, totalItems)
 
@@ -58,13 +60,13 @@ export function Pagination({
   return (
     <div className="flex items-center justify-between gap-4 py-4">
       <div className="text-sm text-muted-foreground">
-        Показано {startItem}-{endItem} из {totalItems}
+        {t('pagination.showing')} {startItem}-{endItem} {t('pagination.of')} {totalItems}
       </div>
 
       <div className="flex items-center gap-2">
         {onPageSizeChange && (
           <div className="flex items-center gap-2 mr-4">
-            <span className="text-sm text-muted-foreground">На странице:</span>
+            <span className="text-sm text-muted-foreground">{t('pagination.perPage')}:</span>
             <select
               value={pageSize}
               onChange={(e) => onPageSizeChange(Number(e.target.value))}
@@ -84,7 +86,7 @@ export function Pagination({
           size="icon"
           onClick={() => onPageChange(1)}
           disabled={currentPage === 1}
-          title="Первая страница"
+          title={t('pagination.firstPage')}
         >
           <ChevronsLeft className="h-4 w-4" />
         </Button>
@@ -94,7 +96,7 @@ export function Pagination({
           size="icon"
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          title="Предыдущая"
+          title={t('pagination.previousPage')}
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
@@ -124,7 +126,7 @@ export function Pagination({
           size="icon"
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
-          title="Следующая"
+          title={t('pagination.nextPage')}
         >
           <ChevronRight className="h-4 w-4" />
         </Button>
@@ -134,7 +136,7 @@ export function Pagination({
           size="icon"
           onClick={() => onPageChange(totalPages)}
           disabled={currentPage === totalPages}
-          title="Последняя страница"
+          title={t('pagination.lastPage')}
         >
           <ChevronsRight className="h-4 w-4" />
         </Button>

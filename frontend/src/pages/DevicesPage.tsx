@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Plus, Monitor, Server, Camera, Network, AlertCircle, Play, Square, RefreshCw } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Plus, Monitor, Server, Camera, Network, AlertCircle, Play, Square, RefreshCw, Search } from 'lucide-react'
 import { DeviceForm } from '@/components/devices/DeviceForm'
 import { DeviceList } from '@/components/devices/DeviceList'
 import { DeviceDetailsPanel } from '@/components/device/DeviceDetailsPanel'
@@ -25,6 +26,7 @@ import {
   GetCameraPort,
 } from '../../wailsjs/go/main/App'
 import { useMonitoring, useDeviceStatusEvents } from '@/hooks/useMonitoring'
+import { useTranslation } from '@/i18n'
 
 interface Device {
   id: number
@@ -57,6 +59,7 @@ interface DevicesPageProps {
 }
 
 export function DevicesPage({ filterType }: DevicesPageProps) {
+  const { t } = useTranslation()
   const [devices, setDevices] = useState<Device[]>([])
   const [credentials, setCredentials] = useState<Credential[]>([])
   const [stats, setStats] = useState<DeviceStats>({
@@ -75,6 +78,10 @@ export function DevicesPage({ filterType }: DevicesPageProps) {
   const [pageSize, setPageSize] = useState(20)
   const [totalItems, setTotalItems] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
+
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
 
   // Form state
   const [formOpen, setFormOpen] = useState(false)
@@ -113,6 +120,17 @@ export function DevicesPage({ filterType }: DevicesPageProps) {
     }, [])
   )
 
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchQuery !== debouncedSearch) {
+        setDebouncedSearch(searchQuery)
+        setCurrentPage(1) // Reset to first page on search
+      }
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchQuery, debouncedSearch])
+
   const loadData = useCallback(async () => {
     try {
       setIsLoading(true)
@@ -122,7 +140,7 @@ export function DevicesPage({ filterType }: DevicesPageProps) {
         GetDevicesPaginated({
           type: filterType || '',
           status: '',
-          search: '',
+          search: debouncedSearch,
           page: currentPage,
           page_size: pageSize,
           sort_by: '',
@@ -146,11 +164,11 @@ export function DevicesPage({ filterType }: DevicesPageProps) {
       })
       setCredentials(credsData || [])
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка загрузки данных')
+      setError(err instanceof Error ? err.message : t('errors.loadingData'))
     } finally {
       setIsLoading(false)
     }
-  }, [filterType, currentPage, pageSize])
+  }, [filterType, currentPage, pageSize, debouncedSearch, t])
 
   useEffect(() => {
     loadData()
@@ -282,7 +300,7 @@ export function DevicesPage({ filterType }: DevicesPageProps) {
       setDeleteId(null)
       await loadData()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка удаления')
+      setError(err instanceof Error ? err.message : t('errors.deletingData'))
     } finally {
       setIsDeleting(false)
     }
@@ -311,30 +329,30 @@ export function DevicesPage({ filterType }: DevicesPageProps) {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatsCard
-          title="Всего устройств"
+          title={t('devices.totalDevices')}
           value={stats.total.toString()}
           icon={<Monitor className="h-5 w-5" />}
-          description={`${stats.online} в сети`}
+          description={`${stats.online} ${t('devices.inNetwork')}`}
         />
         <StatsCard
-          title="Коммутаторы"
+          title={t('devices.stats.switches')}
           value={stats.switch.toString()}
           icon={<Network className="h-5 w-5" />}
-          description="SNMP мониторинг"
+          description={t('devices.stats.switchesDesc')}
           color="text-blue-500"
         />
         <StatsCard
-          title="Серверы"
+          title={t('devices.stats.servers')}
           value={stats.server.toString()}
           icon={<Server className="h-5 w-5" />}
-          description="Ping/TCP проверка"
+          description={t('devices.stats.serversDesc')}
           color="text-green-500"
         />
         <StatsCard
-          title="Камеры"
+          title={t('devices.stats.cameras')}
           value={stats.camera.toString()}
           icon={<Camera className="h-5 w-5" />}
-          description="RTSP/ONVIF"
+          description={t('devices.stats.camerasDesc')}
           color="text-purple-500"
         />
       </div>
@@ -343,15 +361,26 @@ export function DevicesPage({ filterType }: DevicesPageProps) {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle>Устройства</CardTitle>
+            <CardTitle>{t('devices.title')}</CardTitle>
             <CardDescription>
-              Список всех устройств в сети
+              {t('devices.subtitle')}
               {monitoringStatus.running && (
-                <span className="ml-2 text-green-500">● Мониторинг активен</span>
+                <span className="ml-2 text-green-500">● {t('settings.monitoring.running')}</span>
               )}
             </CardDescription>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder={t('common.search') as string}
+                className="pl-8 w-[200px]"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
             {monitoringStatus.running ? (
               <Button
                 variant="outline"
@@ -359,7 +388,7 @@ export function DevicesPage({ filterType }: DevicesPageProps) {
                 disabled={isMonitoringLoading}
               >
                 <Square className="h-4 w-4 mr-2" />
-                Остановить
+                {t('settings.monitoring.stop')}
               </Button>
             ) : (
               <Button
@@ -368,7 +397,7 @@ export function DevicesPage({ filterType }: DevicesPageProps) {
                 disabled={isMonitoringLoading}
               >
                 <Play className="h-4 w-4 mr-2" />
-                Запустить
+                {t('settings.monitoring.start')}
               </Button>
             )}
             <Button
@@ -377,11 +406,11 @@ export function DevicesPage({ filterType }: DevicesPageProps) {
               disabled={isMonitoringLoading}
             >
               <RefreshCw className="h-4 w-4 mr-2" />
-              Проверить
+              {t('settings.monitoring.check')}
             </Button>
             <Button onClick={handleCreate}>
               <Plus className="h-4 w-4 mr-2" />
-              Добавить устройство
+              {t('devices.addDevice')}
             </Button>
           </div>
         </CardHeader>
@@ -419,22 +448,21 @@ export function DevicesPage({ filterType }: DevicesPageProps) {
       <Dialog open={deleteId !== null} onOpenChange={() => setDeleteId(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Удалить устройство?</DialogTitle>
+            <DialogTitle>{t('devices.deleteConfirm')}</DialogTitle>
             <DialogDescription>
-              Это действие нельзя отменить. Устройство и все связанные данные
-              будут удалены.
+              {t('devices.deleteWarning')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteId(null)}>
-              Отмена
+              {t('common.cancel')}
             </Button>
             <Button
               variant="destructive"
               onClick={handleDeleteConfirm}
               disabled={isDeleting}
             >
-              {isDeleting ? 'Удаление...' : 'Удалить'}
+              {isDeleting ? t('common.loading') : t('common.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>

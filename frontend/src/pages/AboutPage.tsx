@@ -19,6 +19,7 @@ import {
   ScrollText,
 } from "lucide-react"
 import { GetAppInfo, GetDeviceStats, GetDataPath, OpenDataFolder, GetLogPath, OpenLogFolder } from '../../wailsjs/go/main/App'
+import { useTranslation } from '@/i18n'
 
 interface AppInfo {
   name: string
@@ -36,6 +37,7 @@ interface Stats {
 }
 
 export function AboutPage() {
+  const { t } = useTranslation()
   const [appInfo, setAppInfo] = useState<AppInfo | null>(null)
   const [stats, setStats] = useState<Stats | null>(null)
   const [dataPath, setDataPath] = useState('')
@@ -86,14 +88,14 @@ export function AboutPage() {
           </div>
           <CardTitle className="text-xl">{appInfo?.name || 'NetVisionMonitor'}</CardTitle>
           <CardDescription className="text-xs">
-            Система мониторинга сетевой инфраструктуры
+            {t('about.description')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex justify-center gap-3">
             <div className="text-center">
               <p className="text-2xl font-bold text-primary">{appInfo?.version || '1.0.0'}</p>
-              <p className="text-xs text-muted-foreground">Версия</p>
+              <p className="text-xs text-muted-foreground">{t('about.version')}</p>
             </div>
             {appInfo?.isPortable && (
               <Badge variant="secondary" className="h-fit mt-1">
@@ -112,27 +114,27 @@ export function AboutPage() {
                 <div className="p-2 rounded-lg bg-muted/50">
                   <Monitor className="h-4 w-4 mx-auto mb-1 text-blue-500" />
                   <p className="text-lg font-bold">{stats.switch}</p>
-                  <p className="text-[10px] text-muted-foreground">Коммутаторы</p>
+                  <p className="text-[10px] text-muted-foreground">{t('devices.stats.switches')}</p>
                 </div>
                 <div className="p-2 rounded-lg bg-muted/50">
                   <Server className="h-4 w-4 mx-auto mb-1 text-green-500" />
                   <p className="text-lg font-bold">{stats.server}</p>
-                  <p className="text-[10px] text-muted-foreground">Серверы</p>
+                  <p className="text-[10px] text-muted-foreground">{t('devices.stats.servers')}</p>
                 </div>
                 <div className="p-2 rounded-lg bg-muted/50">
                   <Camera className="h-4 w-4 mx-auto mb-1 text-purple-500" />
                   <p className="text-lg font-bold">{stats.camera}</p>
-                  <p className="text-[10px] text-muted-foreground">Камеры</p>
+                  <p className="text-[10px] text-muted-foreground">{t('devices.stats.cameras')}</p>
                 </div>
               </div>
               <div className="flex justify-center gap-6 text-xs">
                 <span className="flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                  {stats.online} онлайн
+                  {stats.online} {t('status.online').toLowerCase()}
                 </span>
                 <span className="flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                  {stats.offline} оффлайн
+                  {stats.offline} {t('status.offline').toLowerCase()}
                 </span>
               </div>
               <Separator />
@@ -143,17 +145,17 @@ export function AboutPage() {
           <div className="space-y-2">
             <InfoItem
               icon={<FileText className="h-4 w-4" />}
-              title="Возможности"
-              description="SNMP, Ping/TCP, RTSP/ONVIF мониторинг"
+              title={t('about.features')}
+              description="SNMP, Ping/TCP, RTSP/ONVIF"
             />
             <InfoItem
               icon={<Shield className="h-4 w-4" />}
-              title="Безопасность"
-              description="Локальное хранение, AES-256-GCM шифрование"
+              title={t('about.featuresList.monitoring')}
+              description="AES-256-GCM"
             />
             <InfoItem
               icon={<Code className="h-4 w-4" />}
-              title="Технологии"
+              title={t('about.technologies')}
               description="Go, Wails v2, React, TypeScript, SQLite"
             />
           </div>
@@ -164,16 +166,16 @@ export function AboutPage() {
           <div className="space-y-1">
             <div className="flex items-center gap-1.5 text-xs font-medium">
               <Folder className="h-3 w-3" />
-              Данные
+              {t('settings.data.title')}
             </div>
             <div className="flex items-center gap-1">
               <code className="flex-1 p-1.5 rounded bg-muted text-[10px] font-mono truncate">
-                {dataPath || 'Загрузка...'}
+                {dataPath || t('common.loading')}
               </code>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleCopyPath} title="Копировать">
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleCopyPath}>
                 {copied ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
               </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => OpenDataFolder()} title="Открыть">
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => OpenDataFolder()}>
                 <ExternalLink className="h-3 w-3" />
               </Button>
             </div>
@@ -183,16 +185,16 @@ export function AboutPage() {
           <div className="space-y-1">
             <div className="flex items-center gap-1.5 text-xs font-medium">
               <ScrollText className="h-3 w-3" />
-              Логи
+              {t('events.title')}
             </div>
             <div className="flex items-center gap-1">
               <code className="flex-1 p-1.5 rounded bg-muted text-[10px] font-mono truncate">
-                {logPath || 'Загрузка...'}
+                {logPath || t('common.loading')}
               </code>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleCopyLogPath} title="Копировать">
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleCopyLogPath}>
                 {copiedLog ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
               </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => OpenLogFolder()} title="Открыть">
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => OpenLogFolder()}>
                 <ExternalLink className="h-3 w-3" />
               </Button>
             </div>
@@ -202,7 +204,7 @@ export function AboutPage() {
 
           <div className="text-center text-xs text-muted-foreground">
             <p>
-              Разработчик: <span className="font-medium">walged</span> with Claude •{' '}
+              {t('about.author')}: <span className="font-medium">walged</span> with Claude •{' '}
               <a href="https://arthurdev.ru" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
                 arthurdev.ru
               </a>

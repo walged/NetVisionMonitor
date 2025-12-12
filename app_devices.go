@@ -115,17 +115,21 @@ func (a *App) GetDevicesByType(deviceType string) ([]models.Device, error) {
 // GetDevice returns a device by ID with type-specific details
 func (a *App) GetDevice(id int64) (*models.DeviceWithDetails, error) {
 	if a.db == nil {
+		log.Printf("GetDevice(%d): database not initialized", id)
 		return nil, fmt.Errorf("database not initialized")
 	}
 
 	deviceRepo := database.NewDeviceRepository(a.db.DB())
 	device, err := deviceRepo.GetByID(id)
 	if err != nil {
+		log.Printf("GetDevice(%d): error from repository: %v", id, err)
 		return nil, err
 	}
 	if device == nil {
+		log.Printf("GetDevice(%d): device is nil (not found in database)", id)
 		return nil, fmt.Errorf("device not found")
 	}
+	log.Printf("GetDevice(%d): found device %s (type=%s)", id, device.Name, device.Type)
 
 	result := &models.DeviceWithDetails{Device: *device}
 

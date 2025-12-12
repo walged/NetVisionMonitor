@@ -29,10 +29,12 @@ import {
 import { GetEventsPaginated, ClearEvents } from '../../wailsjs/go/main/App'
 import { useMonitoringEvents } from '@/hooks/useMonitoring'
 import { models } from '../../wailsjs/go/models'
+import { useTranslation } from '@/i18n'
 
 type Event = models.Event
 
 export function EventsPage() {
+  const { t, i18n } = useTranslation()
   const [events, setEvents] = useState<Event[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [levelFilter, setLevelFilter] = useState<string>('all')
@@ -101,8 +103,9 @@ export function EventsPage() {
   }
 
   const handleExport = () => {
+    const headers = i18n.language === 'ru' ? 'Время,Уровень,Тип,Сообщение' : 'Time,Level,Type,Message'
     const csv = [
-      'Время,Уровень,Тип,Сообщение',
+      headers,
       ...events.map(
         (e) =>
           `"${e.created_at}","${e.level}","${e.type}","${e.message.replace(/"/g, '""')}"`
@@ -132,17 +135,18 @@ export function EventsPage() {
   const getLevelBadge = (level: string) => {
     switch (level) {
       case 'error':
-        return <Badge variant="destructive">Ошибка</Badge>
+        return <Badge variant="destructive">{t('events.levels.error')}</Badge>
       case 'warn':
-        return <Badge variant="warning">Предупреждение</Badge>
+        return <Badge variant="warning">{t('events.levels.warning')}</Badge>
       default:
-        return <Badge variant="secondary">Информация</Badge>
+        return <Badge variant="secondary">{t('events.levels.info')}</Badge>
     }
   }
 
   const formatTime = (dateStr: string) => {
     const date = new Date(dateStr)
-    return date.toLocaleString('ru-RU', {
+    const locale = i18n.language === 'ru' ? 'ru-RU' : 'en-US'
+    return date.toLocaleString(locale, {
       day: '2-digit',
       month: '2-digit',
       hour: '2-digit',
@@ -156,9 +160,9 @@ export function EventsPage() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle>Журнал событий</CardTitle>
+            <CardTitle>{t('events.title')}</CardTitle>
             <CardDescription>
-              История событий и уведомлений ({totalItems})
+              {t('events.subtitle')} ({totalItems})
             </CardDescription>
           </div>
           <div className="flex gap-2">
@@ -168,19 +172,19 @@ export function EventsPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Все события</SelectItem>
-                <SelectItem value="error">Ошибки</SelectItem>
-                <SelectItem value="warn">Предупреждения</SelectItem>
-                <SelectItem value="info">Информация</SelectItem>
+                <SelectItem value="all">{t('common.all')}</SelectItem>
+                <SelectItem value="error">{t('events.levels.error')}</SelectItem>
+                <SelectItem value="warn">{t('events.levels.warning')}</SelectItem>
+                <SelectItem value="info">{t('events.levels.info')}</SelectItem>
               </SelectContent>
             </Select>
             <Button variant="outline" onClick={handleExport}>
               <Download className="h-4 w-4 mr-2" />
-              Экспорт
+              {t('settings.data.export')}
             </Button>
             <Button variant="outline" onClick={handleClear}>
               <Trash2 className="h-4 w-4 mr-2" />
-              Очистить
+              {t('events.clearEvents')}
             </Button>
           </div>
         </CardHeader>
@@ -188,9 +192,9 @@ export function EventsPage() {
           {events.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <ScrollText className="h-12 w-12 mb-4 opacity-50" />
-              <p className="text-lg font-medium">Нет событий</p>
+              <p className="text-lg font-medium">{t('events.noEvents')}</p>
               <p className="text-sm">
-                События будут появляться здесь по мере работы системы
+                {t('events.subtitle')}
               </p>
             </div>
           ) : (
