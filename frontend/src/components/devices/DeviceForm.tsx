@@ -131,7 +131,9 @@ export function DeviceForm({
 
   const loadSwitches = async () => {
     try {
+      console.log('DeviceForm: Loading switches...')
       const data = await GetSwitchesWithPorts()
+      console.log('DeviceForm: Loaded switches:', data)
       setSwitches(data || [])
       return data || []
     } catch (err) {
@@ -140,12 +142,12 @@ export function DeviceForm({
     }
   }
 
-  // Load switches when form opens and type is camera, switch, or server
+  // Load switches when form opens (needed for cameras and uplinks)
   useEffect(() => {
-    if (open && (formData.type === 'camera' || formData.type === 'switch' || formData.type === 'server')) {
+    if (open) {
       loadSwitches()
     }
-  }, [open, formData.type])
+  }, [open])
 
   // Initialize form data and find switch for existing camera/uplink
   useEffect(() => {

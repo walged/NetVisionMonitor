@@ -191,7 +191,9 @@ func (a *App) GetCameraPort(cameraDeviceID int64) (*int64, error) {
 
 // GetSwitchesWithPorts returns all switches with their ports for camera linking
 func (a *App) GetSwitchesWithPorts() ([]SwitchWithPorts, error) {
+	log.Printf("GetSwitchesWithPorts: called")
 	if a.db == nil {
+		log.Printf("GetSwitchesWithPorts: db is nil!")
 		return []SwitchWithPorts{}, nil
 	}
 
@@ -201,8 +203,10 @@ func (a *App) GetSwitchesWithPorts() ([]SwitchWithPorts, error) {
 	// Get all switch devices
 	devices, err := deviceRepo.GetByType(models.DeviceTypeSwitch)
 	if err != nil {
+		log.Printf("GetSwitchesWithPorts: error getting devices: %v", err)
 		return []SwitchWithPorts{}, err
 	}
+	log.Printf("GetSwitchesWithPorts: found %d switch devices", len(devices))
 
 	result := make([]SwitchWithPorts, 0)
 	for _, d := range devices {

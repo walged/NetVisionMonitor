@@ -276,6 +276,8 @@ func (a *App) SetPoEEnabled(deviceID int64, portNumber int, enabled bool) error 
 
 // RestartPoEPort restarts PoE on a port (turns off, waits, turns on)
 func (a *App) RestartPoEPort(deviceID int64, portNumber int) error {
+	log.Printf("RestartPoEPort called: device=%d, port=%d", deviceID, portNumber)
+
 	if a.db == nil {
 		return fmt.Errorf("database not initialized")
 	}
@@ -291,6 +293,9 @@ func (a *App) RestartPoEPort(deviceID int64, portNumber int) error {
 	if err != nil || sw == nil {
 		return fmt.Errorf("switch configuration not found")
 	}
+
+	log.Printf("RestartPoEPort: IP=%s, Version=%s, Community=%s, WriteCommunity=%s",
+		device.IPAddress, sw.SNMPVersion, sw.SNMPCommunity, sw.SNMPWriteCommunity)
 
 	client := createSNMPWriteClient(device.IPAddress, sw)
 

@@ -69,7 +69,7 @@ func onTrayReady() {
 		if trayApp != nil {
 			logger.Info("Quit requested from tray menu")
 			trayRunning = false
-			systray.Quit()
+			// First quit the app, then stop systray
 			trayApp.QuitApp()
 		}
 	})
