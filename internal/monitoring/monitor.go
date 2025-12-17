@@ -218,7 +218,7 @@ func (m *Monitor) checkDevice(ctx context.Context, device models.Device) error {
 	}
 }
 
-// checkSwitch checks a switch via SNMP
+// checkSwitch checks a switch via SNMP, falls back to ping if SNMP fails
 func (m *Monitor) checkSwitch(ctx context.Context, device models.Device) error {
 	// Get switch details
 	switchRepo := database.NewSwitchRepository(m.db.DB())
@@ -232,6 +232,8 @@ func (m *Monitor) checkSwitch(ctx context.Context, device models.Device) error {
 
 	if sw.SNMPVersion == "v3" {
 		// Use SNMPv3
+		logger.Debug("checkSwitch: using SNMPv3 for %s - user=%s, security=%s, authProto=%s, privProto=%s",
+			device.IPAddress, sw.SNMPv3User, sw.SNMPv3Security, sw.SNMPv3AuthProto, sw.SNMPv3PrivProto)
 		client = snmp.NewClientV3(
 			device.IPAddress,
 			sw.SNMPv3User,
@@ -252,12 +254,10 @@ func (m *Monitor) checkSwitch(ctx context.Context, device models.Device) error {
 	}
 
 	available, _, err := client.CheckAvailability(ctx)
-	if err != nil {
-		return err
-	}
-
-	if !available {
-		return err
+	if err != nil || !available {
+		// SNMP failed - fallback to ping
+		logger.Debug("SNMP check failed for %s, falling back to ping: %v", device.IPAddress, err)
+		return m.checkPing(ctx, device)
 	}
 
 	// Optionally update port statuses

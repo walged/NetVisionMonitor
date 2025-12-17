@@ -29,22 +29,34 @@ func InitTray(app *App) {
 
 	// Left click shows context menu
 	systray.SetOnClick(func(menu systray.IMenu) {
-		menu.ShowMenu()
+		logger.Debug("Tray left click detected")
+		if menu != nil {
+			menu.ShowMenu()
+		} else {
+			logger.Error("Tray menu is nil on left click")
+		}
 	})
 
 	// Right click also shows context menu
 	systray.SetOnRClick(func(menu systray.IMenu) {
-		menu.ShowMenu()
+		logger.Debug("Tray right click detected")
+		if menu != nil {
+			menu.ShowMenu()
+		} else {
+			logger.Error("Tray menu is nil on right click")
+		}
 	})
 
 	// Double click to show window
 	systray.SetOnDClick(func(menu systray.IMenu) {
+		logger.Debug("Tray double click detected")
 		if trayApp != nil {
 			trayApp.ShowFromTray()
 		}
 	})
 
-	go systray.Run(onTrayReady, onTrayExit)
+	// Use Register instead of Run to coexist with Wails event loop
+	systray.Register(onTrayReady, onTrayExit)
 }
 
 func onTrayReady() {
@@ -60,6 +72,7 @@ func onTrayReady() {
 	mQuit = systray.AddMenuItem("Выход", "Полностью закрыть приложение")
 
 	mShow.Click(func() {
+		logger.Debug("Tray menu 'Show' clicked")
 		if trayApp != nil {
 			trayApp.ShowFromTray()
 		}

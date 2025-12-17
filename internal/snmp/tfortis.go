@@ -314,6 +314,8 @@ func (t *TFortisClient) SetPoEEnabled(portNum int, enabled bool) error {
 
 	oid := fmt.Sprintf("%s.%d", OIDPoEStateBase, portNum)
 	fmt.Printf("TFortis SetPoEEnabled: port=%d, enabled=%v, value=%d (1=On, 2=Off), oid=%s\n", portNum, enabled, value, oid)
+	fmt.Printf("TFortis SetPoEEnabled: client version=%s, v3user=%s, v3security=%s\n",
+		t.client.version, t.client.v3User, t.client.v3Security)
 	err := t.client.SetInteger(oid, value)
 	if err != nil {
 		fmt.Printf("TFortis SetPoEEnabled error: %v\n", err)

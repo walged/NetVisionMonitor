@@ -294,8 +294,13 @@ func (a *App) RestartPoEPort(deviceID int64, portNumber int) error {
 		return fmt.Errorf("switch configuration not found")
 	}
 
-	log.Printf("RestartPoEPort: IP=%s, Version=%s, Community=%s, WriteCommunity=%s",
-		device.IPAddress, sw.SNMPVersion, sw.SNMPCommunity, sw.SNMPWriteCommunity)
+	if sw.SNMPVersion == "v3" {
+		log.Printf("RestartPoEPort: IP=%s, Version=%s, User=%s, Security=%s, AuthProto=%s, PrivProto=%s",
+			device.IPAddress, sw.SNMPVersion, sw.SNMPv3User, sw.SNMPv3Security, sw.SNMPv3AuthProto, sw.SNMPv3PrivProto)
+	} else {
+		log.Printf("RestartPoEPort: IP=%s, Version=%s, Community=%s, WriteCommunity=%s",
+			device.IPAddress, sw.SNMPVersion, sw.SNMPCommunity, sw.SNMPWriteCommunity)
+	}
 
 	client := createSNMPWriteClient(device.IPAddress, sw)
 
