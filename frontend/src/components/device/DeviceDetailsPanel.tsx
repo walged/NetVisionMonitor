@@ -771,7 +771,9 @@ export function DeviceDetailsPanel({ deviceId, onBack }: DeviceDetailsPanelProps
                               <TableCell>{snmpPort ? formatBytes(snmpPort.rx_bytes) : '-'}</TableCell>
                               <TableCell>{snmpPort ? formatBytes(snmpPort.tx_bytes) : '-'}</TableCell>
                               <TableCell>
-                                {snmpPoe?.active ? (
+                                {port.port_type === 'sfp' ? (
+                                  <span className="text-muted-foreground">—</span>
+                                ) : snmpPoe?.active ? (
                                   <Zap className="h-4 w-4 text-yellow-500" />
                                 ) : snmpPoe?.enabled ? (
                                   <ZapOff className="h-4 w-4 text-gray-400" />
@@ -780,7 +782,7 @@ export function DeviceDetailsPanel({ deviceId, onBack }: DeviceDetailsPanelProps
                                 )}
                               </TableCell>
                               <TableCell>
-                                {snmpPoe?.active ? `${snmpPoe.power_w.toFixed(1)} Вт` : '-'}
+                                {port.port_type === 'sfp' ? '—' : snmpPoe?.active ? `${snmpPoe.power_w.toFixed(1)} Вт` : '-'}
                               </TableCell>
                               <TableCell>
                                 {port.port_type === 'sfp' ? (

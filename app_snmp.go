@@ -143,18 +143,21 @@ func (a *App) GetSwitchSNMPData(deviceID int64) (*models.SwitchSNMPData, error) 
 		}
 	}
 
-	// Get PoE info
-	poeInfos, err := client.GetAllPoEInfo(sw.PortCount)
-	if err == nil {
-		result.PoE = make([]models.SNMPPoEInfo, len(poeInfos))
-		for i, p := range poeInfos {
-			result.PoE[i] = models.SNMPPoEInfo{
-				PortNumber: p.PortNumber,
-				Enabled:    p.Enabled,
-				Active:     p.Active,
-				Status:     p.Status,
-				PowerMW:    p.PowerMW,
-				PowerW:     p.PowerW,
+	// Get PoE info (only for copper ports, SFP ports don't support PoE)
+	copperPorts := sw.PortCount - sw.SFPPortCount
+	if copperPorts > 0 {
+		poeInfos, err := client.GetAllPoEInfo(copperPorts)
+		if err == nil {
+			result.PoE = make([]models.SNMPPoEInfo, len(poeInfos))
+			for i, p := range poeInfos {
+				result.PoE[i] = models.SNMPPoEInfo{
+					PortNumber: p.PortNumber,
+					Enabled:    p.Enabled,
+					Active:     p.Active,
+					Status:     p.Status,
+					PowerMW:    p.PowerMW,
+					PowerW:     p.PowerW,
+				}
 			}
 		}
 	}

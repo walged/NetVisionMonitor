@@ -424,3 +424,105 @@ func ensureLeadingSlash(path string) string {
 	}
 	return path
 }
+
+// CameraManufacturerPreset represents manufacturer preset for frontend
+type CameraManufacturerPreset struct {
+	Name        string                `json:"name"`
+	DisplayName string                `json:"display_name"`
+	Presets     []CameraSeriesPreset  `json:"presets"`
+}
+
+// CameraSeriesPreset represents a specific camera series preset
+type CameraSeriesPreset struct {
+	Series       string   `json:"series"`
+	Description  string   `json:"description"`
+	ONVIFPort    int      `json:"onvif_port"`
+	RTSPPort     int      `json:"rtsp_port"`
+	SnapshotURLs []string `json:"snapshot_urls"`
+	RTSPURLs     []string `json:"rtsp_urls"`
+}
+
+// GetCameraManufacturers returns list of camera manufacturers with presets
+func (a *App) GetCameraManufacturers() []CameraManufacturerPreset {
+	allPresets := onvif.GetAllManufacturers()
+	result := make([]CameraManufacturerPreset, len(allPresets))
+
+	for i, m := range allPresets {
+		result[i] = CameraManufacturerPreset{
+			Name:        m.Name,
+			DisplayName: m.DisplayName,
+			Presets:     make([]CameraSeriesPreset, len(m.Presets)),
+		}
+		for j, p := range m.Presets {
+			result[i].Presets[j] = CameraSeriesPreset{
+				Series:       p.Series,
+				Description:  p.Description,
+				ONVIFPort:    p.ONVIFPort,
+				RTSPPort:     p.RTSPPort,
+				SnapshotURLs: p.SnapshotURLs,
+				RTSPURLs:     p.RTSPURLs,
+			}
+		}
+	}
+
+	return result
+}
+
+// GetCameraPreset returns preset URLs for a specific manufacturer and series
+func (a *App) GetCameraPreset(manufacturer, series, ip string, port int, username, password string) map[string]interface{} {
+	preset := onvif.GetPresetForSeries(manufacturer, series)
+	if preset == nil {
+		return map[string]interface{}{
+			"success": false,
+			"error":   "Preset not found",
+		}
+	}
+
+	rtspPort := preset.RTSPPort
+	if port <= 0 {
+		port = preset.ONVIFPort
+	}
+
+	// Generate URLs from templates
+	snapshotURLs := make([]string, len(preset.SnapshotURLs))
+	for i, tmpl := range preset.SnapshotURLs {
+		snapshotURLs[i] = onvif.ApplyTemplate(tmpl, ip, port, rtspPort, username, password, 1)
+	}
+
+	rtspURLs := make([]string, len(preset.RTSPURLs))
+	for i, tmpl := range preset.RTSPURLs {
+		rtspURLs[i] = onvif.ApplyTemplate(tmpl, ip, port, rtspPort, username, password, 1)
+	}
+
+	return map[string]interface{}{
+		"success":       true,
+		"manufacturer":  preset.Manufacturer,
+		"series":        preset.Series,
+		"description":   preset.Description,
+		"onvif_port":    preset.ONVIFPort,
+		"rtsp_port":     rtspPort,
+		"snapshot_urls": snapshotURLs,
+		"rtsp_urls":     rtspURLs,
+	}
+}
+
+// TrySnapshotURLs tries multiple snapshot URLs and returns the first working one
+func (a *App) TrySnapshotURLs(urls []string, username, password string) map[string]interface{} {
+	for _, snapshotURL := range urls {
+		log.Printf("Trying snapshot URL: %s", snapshotURL)
+		dataURI, err := a.FetchSnapshotFromURL(snapshotURL, username, password)
+		if err == nil && dataURI != "" {
+			return map[string]interface{}{
+				"success":      true,
+				"snapshot_url": snapshotURL,
+				"data_uri":     dataURI,
+			}
+		}
+		log.Printf("Snapshot URL failed: %s - %v", snapshotURL, err)
+	}
+
+	return map[string]interface{}{
+		"success": false,
+		"error":   "None of the snapshot URLs worked",
+	}
+}

@@ -187,17 +187,33 @@ func (c *Client) GetDeviceInformation(ctx context.Context) (*DeviceInfo, error) 
 	}, nil
 }
 
+// mediaServiceEndpoints contains common ONVIF media service endpoints
+var mediaServiceEndpoints = []string{
+	"/onvif/media_service",
+	"/onvif/Media",
+	"/onvif/media",
+	"/onvif/services/media",
+	"/Media",
+	"/media",
+}
+
 // GetProfiles retrieves media profiles
 func (c *Client) GetProfiles(ctx context.Context) ([]MediaProfile, error) {
 	body := `<trt:GetProfiles/>`
 
-	data, err := c.doRequest(ctx, "/onvif/media_service", body)
-	if err != nil {
-		// Try alternative endpoint
-		data, err = c.doRequest(ctx, "/onvif/Media", body)
-		if err != nil {
-			return nil, err
+	var data []byte
+	var err error
+
+	// Try all known media service endpoints
+	for _, endpoint := range mediaServiceEndpoints {
+		data, err = c.doRequest(ctx, endpoint, body)
+		if err == nil {
+			break
 		}
+	}
+
+	if err != nil {
+		return nil, err
 	}
 
 	// Parse response
@@ -238,12 +254,19 @@ func (c *Client) GetStreamURI(ctx context.Context, profileToken string) (string,
 		<trt:ProfileToken>%s</trt:ProfileToken>
 	</trt:GetStreamUri>`, profileToken)
 
-	data, err := c.doRequest(ctx, "/onvif/media_service", body)
-	if err != nil {
-		data, err = c.doRequest(ctx, "/onvif/Media", body)
-		if err != nil {
-			return "", err
+	var data []byte
+	var err error
+
+	// Try all known media service endpoints
+	for _, endpoint := range mediaServiceEndpoints {
+		data, err = c.doRequest(ctx, endpoint, body)
+		if err == nil {
+			break
 		}
+	}
+
+	if err != nil {
+		return "", err
 	}
 
 	// Parse response
@@ -265,12 +288,19 @@ func (c *Client) GetSnapshotURI(ctx context.Context, profileToken string) (strin
 		<trt:ProfileToken>%s</trt:ProfileToken>
 	</trt:GetSnapshotUri>`, profileToken)
 
-	data, err := c.doRequest(ctx, "/onvif/media_service", body)
-	if err != nil {
-		data, err = c.doRequest(ctx, "/onvif/Media", body)
-		if err != nil {
-			return "", err
+	var data []byte
+	var err error
+
+	// Try all known media service endpoints
+	for _, endpoint := range mediaServiceEndpoints {
+		data, err = c.doRequest(ctx, endpoint, body)
+		if err == nil {
+			break
 		}
+	}
+
+	if err != nil {
+		return "", err
 	}
 
 	// Parse response

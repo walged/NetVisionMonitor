@@ -18,8 +18,23 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
-import { GetSwitchesWithPorts } from '../../../wailsjs/go/main/App'
+import { GetSwitchesWithPorts, GetCameraManufacturers, GetCameraPreset } from '../../../wailsjs/go/main/App'
 import { switchManufacturers, getModelsByManufacturer, getPortCountForModel, getSfpPortCountForModel } from '@/data/switchModels'
+
+interface CameraSeriesPreset {
+  series: string
+  description: string
+  onvif_port: number
+  rtsp_port: number
+  snapshot_urls: string[]
+  rtsp_urls: string[]
+}
+
+interface CameraManufacturerPreset {
+  name: string
+  display_name: string
+  presets: CameraSeriesPreset[]
+}
 
 interface DeviceFormData {
   id?: number
@@ -128,6 +143,17 @@ export function DeviceForm({
   const [switches, setSwitches] = useState<SwitchWithPorts[]>([])
   const [selectedSwitchId, setSelectedSwitchId] = useState<number | null>(null)
   const [selectedUplinkSwitchId, setSelectedUplinkSwitchId] = useState<number | null>(null)
+  const [cameraManufacturers, setCameraManufacturers] = useState<CameraManufacturerPreset[]>([])
+  const [selectedCameraSeries, setSelectedCameraSeries] = useState<string>('')
+
+  const loadCameraManufacturers = async () => {
+    try {
+      const data = await GetCameraManufacturers()
+      setCameraManufacturers(data || [])
+    } catch (err) {
+      console.error('Failed to load camera manufacturers:', err)
+    }
+  }
 
   const loadSwitches = async () => {
     try {
@@ -142,10 +168,11 @@ export function DeviceForm({
     }
   }
 
-  // Load switches when form opens (needed for cameras and uplinks)
+  // Load switches and camera manufacturers when form opens
   useEffect(() => {
     if (open) {
       loadSwitches()
+      loadCameraManufacturers()
     }
   }, [open])
 
@@ -185,6 +212,7 @@ export function DeviceForm({
         setFormData(defaultFormData)
         setSelectedSwitchId(null)
         setSelectedUplinkSwitchId(null)
+        setSelectedCameraSeries('')
       }
       setError(null)
     }
@@ -194,6 +222,7 @@ export function DeviceForm({
     } else {
       setSelectedSwitchId(null)
       setSelectedUplinkSwitchId(null)
+      setSelectedCameraSeries('')
     }
   }, [initialData, open])
 
@@ -275,6 +304,56 @@ export function DeviceForm({
   const availableModels = formData.manufacturer
     ? getModelsByManufacturer(formData.manufacturer)
     : []
+
+  // Camera manufacturer/series handlers
+  const handleCameraManufacturerChange = (manufacturerName: string) => {
+    const newManufacturer = manufacturerName === 'none' ? '' : manufacturerName
+    setFormData((prev) => ({
+      ...prev,
+      manufacturer: newManufacturer,
+      model: '',
+    }))
+    setSelectedCameraSeries('')
+  }
+
+  const handleCameraSeriesChange = async (series: string) => {
+    if (series === 'none') {
+      setSelectedCameraSeries('')
+      return
+    }
+    setSelectedCameraSeries(series)
+
+    // Get preset and apply ONVIF port and snapshot URL
+    if (formData.manufacturer && formData.ip_address) {
+      try {
+        const result = await GetCameraPreset(
+          formData.manufacturer,
+          series,
+          formData.ip_address,
+          formData.onvif_port || 80,
+          '', // username will be filled from credentials
+          ''
+        )
+        if (result.success) {
+          setFormData((prev) => ({
+            ...prev,
+            onvif_port: result.onvif_port as number || prev.onvif_port,
+            model: result.description as string || prev.model,
+            // Set first snapshot URL as default
+            snapshot_url: (result.snapshot_urls as string[])?.[0] || prev.snapshot_url,
+          }))
+        }
+      } catch (err) {
+        console.error('Failed to get camera preset:', err)
+      }
+    }
+  }
+
+  const getAvailableCameraSeries = (): CameraSeriesPreset[] => {
+    if (!formData.manufacturer) return []
+    const manufacturer = cameraManufacturers.find(m => m.name === formData.manufacturer)
+    return manufacturer?.presets || []
+  }
 
   const getAvailablePorts = () => {
     if (!selectedSwitchId) return []
@@ -491,15 +570,61 @@ export function DeviceForm({
               </div>
             )}
 
-            {/* Model input for cameras and servers */}
-            {formData.type !== 'switch' && (
+            {/* Camera manufacturer/series selection */}
+            {formData.type === 'camera' && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="camera_manufacturer">Производитель</Label>
+                  <Select
+                    value={formData.manufacturer || 'none'}
+                    onValueChange={handleCameraManufacturerChange}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Выберите производителя..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Выберите...</SelectItem>
+                      {cameraManufacturers.map((m) => (
+                        <SelectItem key={m.name} value={m.name}>
+                          {m.display_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="camera_series">Серия / Модель</Label>
+                  <Select
+                    value={selectedCameraSeries || 'none'}
+                    onValueChange={handleCameraSeriesChange}
+                    disabled={!formData.manufacturer}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Выберите серию..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Выберите...</SelectItem>
+                      {getAvailableCameraSeries().map((preset) => (
+                        <SelectItem key={preset.series} value={preset.series}>
+                          {preset.description}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+
+            {/* Model input for servers only */}
+            {formData.type === 'server' && (
               <div className="grid gap-2">
                 <Label htmlFor="model">Модель</Label>
                 <Input
                   id="model"
                   value={formData.model}
                   onChange={(e) => updateField('model', e.target.value)}
-                  placeholder={formData.type === 'camera' ? 'Hikvision DS-2CD' : 'Dell PowerEdge'}
+                  placeholder="Dell PowerEdge"
                 />
               </div>
             )}

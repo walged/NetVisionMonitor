@@ -145,7 +145,7 @@ func (a *App) shutdown(ctx context.Context) {
 func (a *App) GetAppInfo() map[string]interface{} {
 	return map[string]interface{}{
 		"name":       "NetVisionMonitor",
-		"version":    "1.6.0",
+		"version":    "1.7.0",
 		"isPortable": a.cfg.IsPortable,
 	}
 }
